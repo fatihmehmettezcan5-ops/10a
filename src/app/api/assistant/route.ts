@@ -64,6 +64,7 @@ export async function POST(request: Request) {
     await saveAssistantMessage(user.id, "user", message);
 
     const provider = detectProvider();
+    let activeProvider = provider;
     let reply = "";
     let actions: Record<string, unknown>[] = [];
     let note = "";
@@ -99,18 +100,24 @@ Kullanıcı bir değişiklik istemiyorsa sadece bilgi ver ve actions'ı boş bı
           turns.push({ role: "user", content: message });
         }
 
-        const { raw } = await runModel(turns);
-        const parsed = extractJson(raw);
+        const modelResult = await runModel(turns);
+        activeProvider = modelResult.provider;
+        const parsed = extractJson(modelResult.raw);
         if (parsed) {
           reply = parsed.reply;
           actions = parsed.actions;
-        } else if (raw.trim()) {
-          reply = raw.trim();
+        } else if (modelResult.raw.trim()) {
+          reply = modelResult.raw.trim();
         } else {
           throw new Error("Model boş yanıt döndü.");
         }
       } catch (error) {
-        note = `\n\n_(${provider.label} şu an yanıt veremedi, yerleşik asistana geçtim.)_`;
+        note = `\n\n_(Uzak AI modelleri şu an yanıt veremedi; yerleşik asistana geçtim.)_`;
+        activeProvider = {
+          id: "local",
+          label: "Yerleşik Asistan (otomatik yedek)",
+          model: "kural-motoru",
+        };
         const snapshot = await buildSnapshot(user.id, user.name);
         const local = localAssistant(message, snapshot);
         reply = local.reply;
@@ -140,7 +147,11 @@ Kullanıcı bir değişiklik istemiyorsa sadece bilgi ver ve actions'ı boş bı
       reply: finalReply,
       actions: results,
       changed: results.some((r) => r.ok),
-      provider: { label: provider.label, model: provider.model, id: provider.id },
+      provider: {
+        label: activeProvider.label,
+        model: activeProvider.model,
+        id: activeProvider.id,
+      },
     });
   } catch (error) {
     return jsonError(error);

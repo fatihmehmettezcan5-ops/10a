@@ -17,18 +17,25 @@ Next.js (App Router) + PostgreSQL + Drizzle ORM.
 ## Asistan sağlayıcısı (0 bütçe)
 
 Uygulama üç sağlayıcıyı destekler ve **hiç anahtar yoksa** yerleşik Türkçe kural motoruyla çalışmaya
-devam eder (komutları anlar, eylemleri uygular, tamamen ücretsiz):
+devam eder. Eylül 2026 resmi kataloglarına göre varsayılan modeller:
 
+| Sağlayıcı | Varsayılan model | Durum |
+| --- | --- | --- |
+| Google AI Studio | `gemini-3.8-flash` | Stable, structured output, ücretsiz API katmanı |
+| Groq | `openai/gpt-oss-120b` | Production, strict JSON, ücretsiz hesapta 1.000 istek/gün üst sınırı |
+| OpenRouter | `nex-agi/nex-n2.5-pro:free` | Ücretsiz, agentic, structured output ve tool calling |
+
+```text
+GEMINI_API_KEY=...
+GROQ_API_KEY=...
+OPENROUTER_API_KEY=...
+AI_PROVIDER=gemini
 ```
-OPENROUTER_API_KEY=...   # önerilen: tek anahtarla onlarca ücretsiz model
-GEMINI_API_KEY=...       # Google AI Studio ücretsiz kotası
-GROQ_API_KEY=...         # çok hızlı, cömert ücretsiz kota
-```
 
-Model seçimi: `OPENROUTER_MODEL`, `GEMINI_MODEL`, `GROQ_MODEL`.
-
-Sıra: OpenRouter → Gemini → Groq → yerleşik motor. Sağlayıcı hata verirse otomatik olarak
-yerleşik motora düşer, uygulama asla kilitlenmez.
+`GEMINI_MODEL`, `GROQ_MODEL` ve `OPENROUTER_MODEL` **zorunlu değildir**; yukarıdaki güncel modeller kodda
+varsayılandır. Bir model çalışmazsa uygulama sağlayıcı başına iki güncel yedeği, ardından anahtarı bulunan
+diğer sağlayıcıları otomatik dener. Varsayılan sıra Gemini → Groq → OpenRouter → yerleşik motordur.
+`AI_PROVIDER=groq` veya `AI_PROVIDER=openrouter` ile ilk tercihi değiştirebilirsin.
 
 ## Yerel kurulum
 

@@ -173,17 +173,16 @@ export default function AssistantPanel({
         <section className="card p-4 text-xs leading-relaxed text-slate-400">
           <h2 className="mb-2 text-sm font-bold text-white">🔑 Model ayarı</h2>
           <p>
-            Anahtar yoksa asistan <b>yerleşik kural motoruyla</b> çalışır (tamamen ücretsiz, komutları anlar).
-            Daha doğal sohbet için sunucuya şu ortam değişkenlerinden birini ekle:
+            Anahtar yoksa asistan <b>yerleşik kural motoruyla</b> çalışır. Güncel varsayılanlar:
           </p>
-          <ul className="mt-2 space-y-1 font-mono text-[11px] text-slate-300">
-            <li>OPENROUTER_API_KEY</li>
-            <li>GEMINI_API_KEY</li>
-            <li>GROQ_API_KEY</li>
+          <ul className="mt-2 space-y-1 text-[11px] text-slate-300">
+            <li><b>Gemini:</b> 3.8 Flash</li>
+            <li><b>Groq:</b> GPT-OSS 120B</li>
+            <li><b>OpenRouter:</b> Nex-N2.5-Pro Free</li>
           </ul>
           <p className="mt-2">
-            İstersen modeli <span className="font-mono">OPENROUTER_MODEL</span> /{" "}
-            <span className="font-mono">GEMINI_MODEL</span> ile değiştirebilirsin.
+            Model env&apos;leri opsiyoneldir. <span className="font-mono">AI_PROVIDER</span> ilk tercihi belirler;
+            hata/kotada diğer güncel modellere otomatik geçilir.
           </p>
         </section>
       </aside>

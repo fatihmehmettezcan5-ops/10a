@@ -10,8 +10,9 @@ out/
 .env.*.local
 !.env.example
 
-# Loglar ve işletim sistemi dosyaları
+# Loglar, geçici dağıtım arşivleri ve işletim sistemi dosyaları
 *.log
+*.zip
 .DS_Store
 Thumbs.db
 

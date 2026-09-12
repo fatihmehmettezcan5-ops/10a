@@ -40,8 +40,14 @@ Netlify → **Project configuration → Environment variables** bölümüne şun
 | `SESSION_SECRET` | En az 32 karakter rastgele değer | Evet |
 | `CLASS_JOIN_CODE` | Örn. `10A-2026-GIZLI` | Önerilir |
 | `NEXT_PUBLIC_CLASS_NAME` | `10/A` | Önerilir |
-| `GEMINI_API_KEY` | Google AI Studio anahtarı | Hayır |
+| `GEMINI_API_KEY` | Google AI Studio anahtarı; varsayılan `gemini-3.8-flash` | Hayır |
+| `GROQ_API_KEY` | Groq anahtarı; varsayılan `openai/gpt-oss-120b` | Hayır |
+| `OPENROUTER_API_KEY` | OpenRouter anahtarı; varsayılan `nex-agi/nex-n2.5-pro:free` | Hayır |
+| `AI_PROVIDER` | İlk tercih: `gemini`, `groq` veya `openrouter` | Hayır |
 | `APP_URL` | İlk deploy'dan sonra verilen Netlify adresi | Hayır |
+
+Model adlarını ayrıca eklemek zorunda değilsin. Üç anahtarı da eklersen `AI_PROVIDER=gemini` önerilir;
+uygulama kota veya model hatasında diğer sağlayıcılara otomatik geçer.
 
 Güçlü `SESSION_SECRET` üretmek için bilgisayarında şunu çalıştırabilirsin:
 
