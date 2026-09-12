@@ -124,9 +124,17 @@ export function jsonError(error: unknown) {
 /* ------------------------- basit giriş hız sınırı -------------------------- */
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
+let lastSweepAt = 0;
 
 export function rateLimit(key: string, max = 8, windowMs = 60_000) {
   const now = Date.now();
+  // Süresi dolan kayıtları 5 dakikada bir temizle; Map sınırsız büyümesin.
+  if (now - lastSweepAt > 300_000) {
+    lastSweepAt = now;
+    for (const [k, v] of attempts) {
+      if (v.resetAt < now) attempts.delete(k);
+    }
+  }
   const current = attempts.get(key);
   if (!current || current.resetAt < now) {
     attempts.set(key, { count: 1, resetAt: now + windowMs });

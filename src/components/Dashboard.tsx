@@ -78,6 +78,9 @@ export default function Dashboard({ me }: { me: Me }) {
   }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, notify]);
 
   useEffect(() => {
+    // İlk veri yüklemesi effect içinde yapılıyor; setState burada senkron çağrılmıyor
+    // (async callback). react-hooks kuralının yanlış pozitifi — bakınız: you-might-not-need-an-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshAll();
   }, [refreshAll]);
 

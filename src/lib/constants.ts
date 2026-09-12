@@ -66,10 +66,12 @@ export const SUBJECTS = [
   "Genel",
 ];
 
+export const APP_TIME_ZONE = process.env.APP_TIME_ZONE ?? "Europe/Istanbul";
+
 export function todayISO(): string {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  return new Date(now.getTime() - offset * 60_000).toISOString().slice(0, 10);
+  // Sunucu (Netlify fonksiyonları) UTC'de çalışır; gece 00:00-03:00 arasında
+  // "dün" hesaplamamak için tarih hep Türkiye saatine göre alınır.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE }).format(new Date());
 }
 
 export function formatDateTR(iso?: string | null): string {

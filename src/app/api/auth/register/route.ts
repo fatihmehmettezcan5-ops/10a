@@ -40,18 +40,23 @@ export async function POST(request: Request) {
     const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
     if (existing.length > 0) throw new HttpError(409, "Bu e-posta ile zaten bir hesap var.");
 
-    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(users);
-
-    const [created] = await db
-      .insert(users)
-      .values({
-        name,
-        email,
-        passwordHash: hashPassword(password),
-        role: count === 0 ? "admin" : "student",
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      })
-      .returning();
+    // Danışma kilidi: aynı anda kaydolan ilk iki kullanıcıdan ikisinin de
+    // admin olmasını engeller (sayım + ekleme atomik olur).
+    const created = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(86001010)`);
+      const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(users);
+      const [row] = await tx
+        .insert(users)
+        .values({
+          name,
+          email,
+          passwordHash: hashPassword(password),
+          role: count === 0 ? "admin" : "student",
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        })
+        .returning();
+      return row;
+    });
 
     await setSessionCookie(created.id);
     return Response.json({ user: toSafeUser(created) }, { status: 201 });

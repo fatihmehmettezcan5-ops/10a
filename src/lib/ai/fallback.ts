@@ -1,4 +1,4 @@
-import { DAY_NAMES, STATUS_LABELS, SUBJECTS, todayISO, type HomeworkStatus } from "@/lib/constants";
+import { APP_TIME_ZONE, DAY_NAMES, STATUS_LABELS, SUBJECTS, todayISO, type HomeworkStatus } from "@/lib/constants";
 
 export type Snapshot = {
   homeworks: { id: number; title: string; subject: string; status: string; dueDate: string | null }[];
@@ -30,11 +30,22 @@ const MONTHS = [
 ];
 const WEEKDAYS = ["pazar", "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi"];
 
+function istanbulYear(): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: APP_TIME_ZONE, year: "numeric" }).format(new Date()),
+  );
+}
+
+/** 0 = Pazar ... 6 = Cumartesi (Türkiye saatiyle) */
+function istanbulWeekday(): number {
+  const short = new Intl.DateTimeFormat("en-US", { timeZone: APP_TIME_ZONE, weekday: "short" }).format(new Date());
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(short);
+}
+
 function shift(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  const offset = d.getTimezoneOffset();
-  return new Date(d.getTime() - offset * 60_000).toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE }).format(d);
 }
 
 export function parseTurkishDate(input: string): string | null {
@@ -63,7 +74,7 @@ export function parseTurkishDate(input: string): string | null {
   if (named) {
     const day = Number(named[1]);
     const month = MONTHS.indexOf(named[2]) + 1;
-    const year = new Date().getFullYear();
+    const year = istanbulYear();
     const pad = `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const candidate = `${year}-${pad}`;
     return candidate < todayISO() ? `${year + 1}-${pad}` : candidate;
