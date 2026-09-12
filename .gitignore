@@ -1,0 +1,20 @@
+# Bağımlılıklar ve Next.js çıktıları
+node_modules/
+.next/
+out/
+.netlify/
+
+# Yerel sırlar — asla GitHub'a gönderme
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Loglar ve işletim sistemi dosyaları
+*.log
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

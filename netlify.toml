@@ -1,0 +1,14 @@
+[build]
+  command = "npx drizzle-kit push --force && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--include=dev"
+  NETLIFY_NEXT_SKEW_PROTECTION = "true"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Next.js App Router, SSR, API route'ları ve görsel optimizasyonu
+# Netlify'ın güncel OpenNext adaptörü tarafından otomatik yapılandırılır.
