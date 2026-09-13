@@ -12,9 +12,11 @@ const AI_MENTION = "@10asistan";
 
 export async function GET(request: Request) {
   try {
-    await requireUser();
-    const after = Number(new URL(request.url).searchParams.get("after") ?? 0);
-    const list = await listMessages(Number.isFinite(after) ? after : 0);
+    const user = await requireUser();
+    const params = new URL(request.url).searchParams;
+    const after = Number(params.get("after") ?? 0);
+    const withReads = params.get("reads") === "1";
+    const list = await listMessages(Number.isFinite(after) ? after : 0, 120, user.id, withReads);
     return Response.json({ messages: list });
   } catch (error) {
     return jsonError(error);
@@ -156,7 +158,22 @@ export async function POST(request: Request) {
       aiReplied = await runChatAssistant(user, body, attachments);
     }
 
-    return Response.json({ message: created, aiTriggered, aiReplied }, { status: 201 });
+    return Response.json(
+      {
+        message: {
+          ...created,
+          attachments,
+          mentions,
+          deletedForAll: false,
+          edited: false,
+          reads: [],
+          createdAt: created.createdAt.toISOString(),
+        },
+        aiTriggered,
+        aiReplied,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return jsonError(error);
   }

@@ -100,6 +100,9 @@ export type ChatItem = {
   homeworkId: number | null;
   attachments: ChatAttachment[];
   mentions: number[];
+  deletedForAll: boolean;
+  edited: boolean;
+  reads: { userId: number; name: string; readAt: string }[];
   createdAt: string;
 };
 

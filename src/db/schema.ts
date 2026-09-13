@@ -103,7 +103,25 @@ export const messages = pgTable("messages", {
   attachments: jsonb("attachments").$type<unknown[]>().default([]),
   /** Mention: kullanıcı id listesi (@pingleme). */
   mentions: jsonb("mentions").$type<unknown[]>().default([]),
+  /** Herkes için silindi: gövde gizlenir, "bu mesaj silindi" gösterilir. */
+  deletedForAll: boolean("deleted_for_all").notNull().default(false),
+  /** Kendi için sildi (id listesi) — listeleme sırasında filtrelenir. */
+  deletedFor: jsonb("deleted_for").$type<unknown[]>().default([]),
+  /** Düzenlendi mi (saati değişmez, üstte "düzenlendi" yazar). */
+  edited: boolean("edited").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Mesaj görülme kayıtları: WhatsApp mavi tiki veri kaynağı. */
+export const messageReads = pgTable("message_reads", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** Sohbete yüklenen dosyalar (base64 gövde DB'de; ücretsiz katman için 6 MB tavan). */
@@ -187,6 +205,7 @@ export type HomeworkUpdate = typeof homeworkUpdates.$inferSelect;
 export type ClassEvent = typeof events.$inferSelect;
 export type ScheduleSlot = typeof scheduleSlots.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type MessageRead = typeof messageReads.$inferSelect;
 export type ChatFile = typeof chatFiles.$inferSelect;
 export type AiMemory = typeof aiMemory.$inferSelect;
 export type AssistantProject = typeof assistantProjects.$inferSelect;

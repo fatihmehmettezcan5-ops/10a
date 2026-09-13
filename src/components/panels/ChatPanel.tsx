@@ -14,6 +14,49 @@ import { BUBBLE_IN, BUBBLE_OUT, CHAT_BG_STYLE, dayKey, dayLabel, timeLabel, with
 
 type StagedFile = { file: File; previewUrl: string | null };
 
+type MenuState = { messageId: number; x: number; y: number } | null;
+const EDIT_WINDOW_MS = 15 * 60 * 1000;
+
+function ReadInfoList({
+  reads,
+  authorCount,
+  onClose,
+}: {
+  reads: { userId: number; name: string; readAt: string }[];
+  authorCount: number;
+  onClose: () => void;
+}) {
+  const others = reads.slice().sort((a, b) => a.readAt.localeCompare(b.readAt));
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose} role="presentation">
+      <div
+        className="w-full max-w-xs overflow-hidden rounded-2xl bg-[#233138] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Görüldü bilgisi"
+      >
+        <div className="border-b border-white/5 px-4 py-3">
+          <h3 className="text-sm font-bold text-white">👀 Görüldü bilgisi</h3>
+          <p className="text-[11px] text-slate-400">
+            {others.length}/{Math.max(authorCount - 1, 0)} üye gördü
+          </p>
+        </div>
+        <ul className="max-h-64 overflow-y-auto px-2 py-2">
+          {others.length === 0 && <li className="px-2 py-3 text-center text-xs text-slate-500">Henüz kimse görmedi.</li>}
+          {others.map((r) => (
+            <li key={r.userId} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-white/5">
+              <span className="min-w-0 flex-1 truncate text-slate-200">{r.name}</span>
+              <span className="shrink-0 text-[10px] text-slate-400">
+                {new Date(r.readAt).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 function SendIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -54,6 +97,10 @@ export default function ChatPanel({
   const [mentionIds, setMentionIds] = useState<number[]>([]);
   const [busyUpload, setBusyUpload] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [menu, setMenu] = useState<MenuState>(null);
+  const [readInfoId, setReadInfoId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +113,20 @@ export default function ChatPanel({
       .then((d) => setMembers(d.members))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
 
   // Kullanıcı en alttayken yeni mesaj gelince otomatik kaydır; yukarıdaysa dokunma.
   useEffect(() => {
@@ -86,7 +147,8 @@ export default function ChatPanel({
     async function pull() {
       try {
         const lastId = messages.length ? messages[messages.length - 1].id : 0;
-        const data = await api<{ messages: ChatItem[] }>(`/api/messages?after=${lastId}`);
+        const data = await api<{ messages: ChatItem[] }>(`/api/messages?after=${lastId}&reads=1`);
+        void api("/api/messages/actions", { method: "POST", body: JSON.stringify({ action: "read" }) }).catch(() => {});
         if (data.messages.length) {
           for (const m of data.messages) {
             if (m.mentions?.includes(me.id) && m.userId !== me.id) {
@@ -176,6 +238,48 @@ export default function ChatPanel({
     inputRef.current?.focus();
   }
 
+  /* ------------------------- MESAJ AKSİYONLARI ---------------------- */
+
+  const menuMessage = menu ? messages.find((m) => m.id === menu.messageId) ?? null : null;
+  const canDeleteAll = (m: ChatItem) => (m.userId === me.id || me.role === "admin") && !m.deletedForAll;
+  const canEdit = (m: ChatItem) =>
+    m.userId === me.id && !m.deletedForAll && Date.now() - new Date(m.createdAt).getTime() < EDIT_WINDOW_MS;
+
+  async function deleteForAll(id: number) {
+    try {
+      await api("/api/messages/actions", { method: "POST", body: JSON.stringify({ action: "deleteForAll", messageId: id }) });
+      const data = await api<{ messages: ChatItem[] }>("/api/messages?reads=1");
+      setMessages(data.messages);
+      notify("Mesaj herkesten silindi 🗑️");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Silinemedi.");
+    }
+  }
+
+  async function deleteForMe(id: number) {
+    try {
+      await api("/api/messages/actions", { method: "POST", body: JSON.stringify({ action: "deleteForMe", messageId: id }) });
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      notify("Mesaj senin için silindi");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Silinemedi.");
+    }
+  }
+
+  async function saveEdit(id: number) {
+    const body = editDraft.trim();
+    if (!body) return;
+    try {
+      await api("/api/messages/actions", { method: "POST", body: JSON.stringify({ action: "edit", messageId: id, body }) });
+      setEditingId(null);
+      setEditDraft("");
+      const data = await api<{ messages: ChatItem[] }>("/api/messages?reads=1");
+      setMessages(data.messages);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Düzenlenemedi.");
+    }
+  }
+
   /* ---------------------------- GÖNDERİM ---------------------------- */
 
   function growTextarea(el: HTMLTextAreaElement) {
@@ -221,7 +325,7 @@ export default function ChatPanel({
       setMentionQuery(null);
       clearStaged();
       stickToBottom.current = true;
-      const data = await api<{ messages: ChatItem[] }>("/api/messages");
+      const data = await api<{ messages: ChatItem[] }>("/api/messages?reads=1");
       setMessages(data.messages);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Mesaj gönderilemedi.");
@@ -295,8 +399,92 @@ export default function ChatPanel({
     );
   }
 
+  const readInfoMessage = readInfoId ? messages.find((m) => m.id === readInfoId) : null;
+
   return (
     <div className="card flex h-[76vh] flex-col overflow-hidden p-0">
+      {menu && menuMessage && (
+        <div
+          className="fixed z-50 w-56 overflow-hidden rounded-xl bg-[#233138] py-1 shadow-2xl ring-1 ring-white/10"
+          style={{
+            left: Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 400) - 240),
+            top: Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 600) - 200),
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {menuMessage.userId === me.id && me.role !== "admin" && (
+            <p className="px-3 py-1.5 text-[10px] text-slate-500">Sohbetteki son 15 dk içinde düzenleyebilirsin</p>
+          )}
+          {canEdit(menuMessage) && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(menuMessage.id);
+                setEditDraft(menuMessage.body);
+                setMenu(null);
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+            >
+              ✏️ Düzenle
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(menuMessage.body);
+              setMenu(null);
+              notify("Mesaj kopyalandı 📋");
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+          >
+            📋 Kopyala
+          </button>
+          {menuMessage.userId === me.id && (
+            <button
+              type="button"
+              onClick={() => {
+                setReadInfoId(menuMessage.id);
+                setMenu(null);
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+            >
+              👀 Görüldü bilgisi{" "}
+              <span className="ml-auto text-[10px] text-slate-500">
+                {menuMessage.reads.filter((r) => r.userId !== me.id).length}
+              </span>
+            </button>
+          )}
+          {canDeleteAll(menuMessage) && (
+            <button
+              type="button"
+              onClick={() => {
+                void deleteForAll(menuMessage.id);
+                setMenu(null);
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-rose-300 hover:bg-rose-500/10"
+            >
+              🗑️ Herkes için sil
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              void deleteForMe(menuMessage.id);
+              setMenu(null);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-300 hover:bg-white/5"
+          >
+            🚫 Benim için sil
+          </button>
+        </div>
+      )}
+      {readInfoMessage && (
+        <ReadInfoList
+          reads={readInfoMessage.reads.filter((r) => r.userId !== me.id)}
+          authorCount={Math.max(members.length, 1)}
+          onClose={() => setReadInfoId(null)}
+        />
+      )}
       {/* --------- WhatsApp tarzı başlık --------- */}
       <div className="flex items-center gap-3 border-b border-[#0d1e26] bg-[#202c33] px-4 py-2.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-lg shadow">
@@ -347,6 +535,15 @@ export default function ChatPanel({
           const grouped = withinGroup(prev, message);
           const newDay = !prev || dayKey(prev.createdAt) !== dayKey(message.createdAt);
           const mentionedMe = message.mentions?.includes(me.id);
+          const seenByOthers = message.reads.filter((r) => r.userId !== me.id);
+          const isLastMine = mine && messages.slice(idx + 1).every((m) => m.userId !== me.id);
+
+          const openMenu = (e: React.MouseEvent | React.TouchEvent) => {
+            if (message.deletedForAll) return;
+            e.preventDefault();
+            const pt = "touches" in e ? e.touches[0] : e;
+            setMenu({ messageId: message.id, x: pt.clientX, y: pt.clientY });
+          };
 
           const bubbleBg = mine ? BUBBLE_OUT : BUBBLE_IN;
           const bubbleText = mine ? "text-white" : "text-slate-100";
@@ -392,8 +589,41 @@ export default function ChatPanel({
                     />
                   )}
                   <div
-                    className={`relative whitespace-pre-wrap break-words px-2.5 py-1.5 text-[13.5px] leading-relaxed shadow-sm ${bubbleBg} ${bubbleText} ${radius}`}
+                    onContextMenu={(e) => openMenu(e)}
+                    onTouchStart={(e) => {
+                      const target = e.currentTarget;
+                      const timer = window.setTimeout(() => openMenu(e), 500);
+                      const cancel = () => window.clearTimeout(timer);
+                      target.addEventListener("touchmove", cancel, { once: true });
+                      target.addEventListener("touchend", cancel, { once: true });
+                    }}
+                    className={`relative whitespace-pre-wrap break-words px-2.5 py-1.5 text-[13.5px] leading-relaxed shadow-sm transition active:scale-[0.99] ${bubbleBg} ${bubbleText} ${radius} ${
+                      message.deletedForAll ? "italic opacity-60" : "cursor-pointer select-none"
+                    }`}
+                    title="Uzun bas ya da sağ tıkla"
                   >
+                    {message.deletedForAll ? (
+                      <span className="flex items-center gap-1.5 text-[13px] text-slate-400">
+                        <span aria-hidden>🚫</span> Bu mesaj silindi
+                        <span className="ml-1 text-[10px] not-italic opacity-70">{message.authorName}</span>
+                      </span>
+                    ) : editingId === message.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="min-w-0 flex-1 rounded bg-black/30 px-2 py-1 text-[13px] text-white outline-none"
+                          value={editDraft}
+                          autoFocus
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") void saveEdit(message.id);
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                        />
+                        <button type="button" onClick={() => void saveEdit(message.id)} className="text-xs text-emerald-300" aria-label="Kaydet">✓</button>
+                        <button type="button" onClick={() => setEditingId(null)} className="text-xs text-slate-400" aria-label="İptal">✕</button>
+                      </div>
+                    ) : (
+                    <>
                     {!mine && !grouped && (
                       <div className="mb-0.5 flex items-center gap-1.5 text-[12.5px] font-bold leading-tight">
                         <span style={{ color: isAi ? "#00a884" : message.authorColor }}>
@@ -424,14 +654,27 @@ export default function ChatPanel({
                     )}
                     <span>{renderBody(message.body)}</span>
                     {renderAttachments(message.attachments ?? [], mine)}
+                    </>
+                    )}
 
                     <div
                       className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none ${
                         mine ? "text-emerald-100/75" : "text-slate-400/80"
                       }`}
                     >
+                      {message.edited && <span className="italic opacity-70">düzenlendi</span>}
                       <span>{timeLabel(message.createdAt)}</span>
-                      {mine && <span className="text-[9px] tracking-tighter">✓✓</span>}
+                      {mine && message.deletedForAll && <span className="text-[9px] tracking-tighter">✓</span>}
+                      {mine && !message.deletedForAll && (
+                        <button
+                          type="button"
+                          className="text-[9px] tracking-tighter transition hover:scale-110"
+                          title={seenByOthers.length ? `${seenByOthers.length} kişi gördü` : "Kimse görmedi"}
+                          onClick={() => setReadInfoId(message.id)}
+                        >
+                          {isLastMine && seenByOthers.length ? "✓✓" : "✓"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

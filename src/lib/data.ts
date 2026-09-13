@@ -5,6 +5,7 @@ import {
   assistantProjects,
   announcements,
   chatFiles,
+  messageReads,
   events,
   homeworks,
   homeworkUpdates,
@@ -13,7 +14,7 @@ import {
   scheduleSlots,
   users,
 } from "@/db/schema";
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { HttpError } from "@/lib/auth";
 import { kindOf, type ChatAttachment } from "@/lib/attachments";
 import {
@@ -407,7 +408,28 @@ export async function upsertScheduleSlot(input: Record<string, unknown>) {
 
 /* --------------------------------- SOHBET --------------------------------- */
 
-export async function listMessages(afterId = 0, limit = 120) {
+export type ChatMessageRow = {
+  id: number;
+  userId: number | null;
+  authorName: string;
+  authorColor: string;
+  authorRole: string;
+  body: string;
+  homeworkId: number | null;
+  attachments: ChatAttachment[];
+  mentions: number[];
+  deletedForAll: boolean;
+  edited: boolean;
+  reads: { userId: number; name: string; readAt: string }[];
+  createdAt: string;
+};
+
+export async function listMessages(
+  afterId = 0,
+  limit = 120,
+  viewerId?: number,
+  includeReads = false,
+): Promise<ChatMessageRow[]> {
   const rows = await db
     .select({ message: messages, authorColor: users.color, authorRole: users.role })
     .from(messages)
@@ -416,20 +438,96 @@ export async function listMessages(afterId = 0, limit = 120) {
     .orderBy(desc(messages.id))
     .limit(limit);
 
-  return rows
+  const visible = rows.filter((r) => {
+    if (viewerId) {
+      const hiddenFor = (r.message.deletedFor ?? []) as unknown[];
+      if (hiddenFor.includes(viewerId)) return false;
+    }
+    return true;
+  });
+
+  // Görülme kayıtları (yalnızca talep edilirse; son 120 mesajın okunmaları)
+  let readRows: { messageId: number; userId: number; name: string; readAt: Date }[] = [];
+  if (includeReads && visible.length) {
+    const ids = visible.map((r) => r.message.id);
+    readRows = await db
+      .select({ messageId: messageReads.messageId, userId: messageReads.userId, name: users.name, readAt: messageReads.readAt })
+      .from(messageReads)
+      .innerJoin(users, eq(messageReads.userId, users.id))
+      .where(inArray(messageReads.messageId, ids));
+  }
+  const readsByMessage = new Map<number, { userId: number; name: string; readAt: string }[]>();
+  for (const r of readRows) {
+    const list = readsByMessage.get(r.messageId) ?? [];
+    list.push({ userId: r.userId, name: r.name, readAt: r.readAt.toISOString() });
+    readsByMessage.set(r.messageId, list);
+  }
+
+  return visible
     .map((r) => ({
       id: r.message.id,
       userId: r.message.userId,
       authorName: r.message.authorName,
       authorColor: r.authorColor ?? (r.message.userId ? "#94a3b8" : "#10b981"),
       authorRole: r.message.userId ? (r.authorRole ?? "student") : "ai",
-      body: r.message.body,
+      body: r.message.deletedForAll ? "" : r.message.body,
       homeworkId: r.message.homeworkId,
-      attachments: (r.message.attachments ?? []) as ChatAttachment[],
+      attachments: r.message.deletedForAll ? [] : ((r.message.attachments ?? []) as ChatAttachment[]),
       mentions: (r.message.mentions ?? []) as number[],
+      deletedForAll: r.message.deletedForAll,
+      edited: r.message.edited,
+      reads: readsByMessage.get(r.message.id) ?? [],
       createdAt: r.message.createdAt.toISOString(),
     }))
     .reverse();
+}
+
+/** Kimliği doğrulanmış kullanıcının okumadığı son mesajları "gördü" olarak işaretler. */
+export async function markMessagesRead(viewerId: number) {
+  const unread = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .leftJoin(messageReads, and(eq(messageReads.messageId, messages.id), eq(messageReads.userId, viewerId)))
+    .where(and(sql`${messageReads.id} is null`, sql`${messages.userId} is distinct from ${viewerId}`))
+    .limit(200);
+  if (!unread.length) return 0;
+  await db.insert(messageReads).values(unread.map((u) => ({ messageId: u.id, userId: viewerId })));
+  return unread.length;
+}
+
+/** Kendi mesajını herkes için siler. Başkan herkesin mesajını silebilir. */
+export async function deleteMessageForAll(user: { id: number; role: string }, messageId: number) {
+  const [row] = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
+  if (!row) throw new HttpError(404, "Mesaj bulunamadı.");
+  const own = row.userId === user.id;
+  if (!own && user.role !== "admin") throw new HttpError(403, "Yalnızca kendi mesajını silebilirsin.");
+  await db.update(messages).set({ deletedForAll: true }).where(eq(messages.id, messageId));
+  return true;
+}
+
+/** Yalnız kendisi için siler: mesaj ona bir daha gösterilmez. */
+export async function deleteMessageForMe(viewerId: number, messageId: number) {
+  const [row] = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
+  if (!row) throw new HttpError(404, "Mesaj bulunamadı.");
+  const hidden = (row.deletedFor ?? []) as unknown[];
+  if (!hidden.includes(viewerId)) {
+    hidden.push(viewerId);
+    await db.update(messages).set({ deletedFor: hidden }).where(eq(messages.id, messageId));
+  }
+  return true;
+}
+
+/** Kendi mesajını düzenler (15 dk penceresi istemcide kontrol edilir). */
+export async function editMessage(userId: number, messageId: number, body: string) {
+  const clean = body.trim();
+  if (!clean) throw new HttpError(400, "Boş mesaj olamaz.");
+  if (clean.length > 1200) throw new HttpError(400, "Mesaj çok uzun (en fazla 1200 karakter).");
+  const [row] = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
+  if (!row) throw new HttpError(404, "Mesaj bulunamadı.");
+  if (row.userId !== userId) throw new HttpError(403, "Yalnızca kendi mesajını düzenleyebilirsin.");
+  if (row.deletedForAll) throw new HttpError(400, "Silinmiş mesaj düzenlenemez.");
+  await db.update(messages).set({ body: clean, edited: true }).where(eq(messages.id, messageId));
+  return true;
 }
 
 export async function createMessage(

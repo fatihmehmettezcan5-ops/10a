@@ -34,6 +34,16 @@ const STATEMENTS = [
      created_at timestamptz NOT NULL DEFAULT now()
    )`,
   `ALTER TABLE assistant_messages ADD COLUMN IF NOT EXISTS project_id integer`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_for_all boolean NOT NULL DEFAULT false`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_for jsonb DEFAULT '[]'::jsonb`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false`,
+  `CREATE TABLE IF NOT EXISTS message_reads (
+     id serial PRIMARY KEY,
+     message_id integer NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+     user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     read_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS message_reads_msg_idx ON message_reads(message_id)`,
 ] as const;
 
 let done: Promise<void> | null = null;
