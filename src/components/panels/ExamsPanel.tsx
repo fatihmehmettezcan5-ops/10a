@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { api, type ExamItem, type Me } from "@/lib/client";
+import { api, type ExamItem, type Me, type MockExamGroup } from "@/lib/client";
 import { SECTION_STYLES, SUBJECT_SECTION, formatDateTR, SUBJECTS, todayISO } from "@/lib/constants";
 import QuickTytForm from "@/components/panels/QuickTytForm";
 
@@ -64,14 +64,18 @@ function NetChart({ points }: { points: { label: string; net: number }[] }) {
 export default function ExamsPanel({
   me,
   exams,
+  groups,
   reload,
   notify,
 }: {
   me: Me;
   exams: ExamItem[];
+  groups: MockExamGroup[];
   reload: () => Promise<void>;
   notify: (text: string) => void;
 }) {
+  // null = en yeni deneme açık; "" = hepsi kapalı
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [examName, setExamName] = useState("");
   const [examType, setExamType] = useState<(typeof EXAM_TYPES)[number]>("TYT");
   const [subject, setSubject] = useState("Matematik");
@@ -149,9 +153,9 @@ export default function ExamsPanel({
     }
   }
 
-  async function remove(id: number) {
+  async function removeGroup(id: string) {
     try {
-      await api(`/api/exams/${id}`, { method: "DELETE" });
+      await api(`/api/exams/group/${encodeURIComponent(id)}`, { method: "DELETE" });
       await reload();
       notify("Deneme kaydı silindi.");
     } catch (error) {
@@ -206,56 +210,69 @@ export default function ExamsPanel({
           )}
         </div>
 
-        <div className="card overflow-x-auto p-4">
-          <h2 className="mb-2 text-sm font-bold text-white">Kayıtlarım</h2>
-          {exams.length === 0 ? (
+        <div className="card p-4">
+          <h2 className="mb-2 text-sm font-bold text-white">Kayıtlarım ({groups.length} deneme)</h2>
+          {groups.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-500">Henüz deneme sonucu eklemedin.</p>
           ) : (
-            <table className="w-full min-w-xl text-xs">
-              <thead>
-                <tr className="text-left text-slate-500">
-                  <th className="px-2 py-1.5">Tarih</th>
-                  <th className="px-2 py-1.5">Deneme</th>
-                  <th className="px-2 py-1.5">Ders</th>
-                  <th className="px-2 py-1.5 text-center">D</th>
-                  <th className="px-2 py-1.5 text-center">Y</th>
-                  <th className="px-2 py-1.5 text-center">B</th>
-                  <th className="px-2 py-1.5 text-center">Net</th>
-                  <th className="px-2 py-1.5"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {exams.map((e) => (
-                  <tr key={e.id} className="border-t border-slate-800/70">
-                    <td className="px-2 py-1.5 text-slate-400">{formatDateTR(e.date)}</td>
-                    <td className="px-2 py-1.5 font-semibold text-slate-100">
-                      {e.examName} <span className="text-[10px] text-slate-500">· {e.examType}</span>
-                    </td>
-                    <td className="px-2 py-1.5 text-slate-300">
-                      <span
-                        className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${SECTION_STYLES[SUBJECT_SECTION[e.subject] ?? ""] ?? "bg-slate-700/40 text-slate-400"}`}
-                      >
-                        {SUBJECT_SECTION[e.subject] ?? "—"}
-                      </span>
-                      {e.subject}
-                    </td>
-                    <td className="px-2 py-1.5 text-center text-emerald-300">{e.correct}</td>
-                    <td className="px-2 py-1.5 text-center text-rose-300">{e.wrong}</td>
-                    <td className="px-2 py-1.5 text-center text-slate-400">{e.empty}</td>
-                    <td className="px-2 py-1.5 text-center font-bold text-indigo-300">{e.net}</td>
-                    <td className="px-2 py-1.5 text-right">
+            <div className="space-y-2">
+              {groups.map((g, gi) => {
+                const open = expanded === null ? gi === 0 : expanded === g.id;
+                return (
+                  <div key={g.id} className="overflow-hidden rounded-xl border border-slate-800">
+                    <div className="flex items-center gap-2 bg-slate-900/60 px-3 py-2.5">
                       <button
-                        onClick={() => remove(e.id)}
-                        className="text-slate-600 transition hover:text-rose-400"
-                        aria-label="Sil"
+                        type="button"
+                        onClick={() => setExpanded(open ? "" : g.id)}
+                        className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
+                        aria-expanded={open}
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-bold text-white">{g.examName}</div>
+                          <div className="text-[10px] text-slate-500">
+                            {formatDateTR(g.date)} · {g.rows.length} ders
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="text-lg font-black text-indigo-300">{g.totalNet}</span>
+                          <span className="text-xs text-slate-500">{open ? "▾" : "▸"}</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeGroup(g.id)}
+                        className="shrink-0 text-slate-600 transition hover:text-rose-400"
+                        aria-label="Denemeyi sil"
                       >
                         🗑
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    {open && (
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {g.rows.map((e) => (
+                            <tr key={e.id} className="border-t border-slate-800/70">
+                              <td className="px-3 py-1.5 text-slate-300">
+                                <span
+                                  className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${SECTION_STYLES[SUBJECT_SECTION[e.subject] ?? ""] ?? "bg-slate-700/40 text-slate-400"}`}
+                                >
+                                  {SUBJECT_SECTION[e.subject] ?? "—"}
+                                </span>
+                                {e.subject}
+                              </td>
+                              <td className="px-2 py-1.5 text-center text-emerald-300">{e.correct}</td>
+                              <td className="px-2 py-1.5 text-center text-rose-300">{e.wrong}</td>
+                              <td className="px-2 py-1.5 text-center text-slate-400">{e.empty}</td>
+                              <td className="px-3 py-1.5 text-right font-bold text-indigo-300">{e.net}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

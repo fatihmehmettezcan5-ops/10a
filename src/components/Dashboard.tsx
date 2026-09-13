@@ -10,6 +10,7 @@ import {
   type ExamItem,
   type HomeworkItem,
   type MemberItem,
+  type MockExamGroup,
   type Me,
   type SlotItem,
   type Stats,
@@ -45,6 +46,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [schedule, setSchedule] = useState<SlotItem[]>([]);
   const [exams, setExams] = useState<ExamItem[]>([]);
+  const [examGroups, setExamGroups] = useState<MockExamGroup[]>([]);
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [members, setMembers] = useState<MemberItem[]>([]);
   const [messages, setMessages] = useState<ChatItem[]>([]);
@@ -73,8 +75,9 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
   }, []);
 
   const loadExams = useCallback(async () => {
-    const data = await api<{ exams: ExamItem[] }>("/api/exams");
+    const data = await api<{ exams: ExamItem[]; groups: MockExamGroup[] }>("/api/exams");
     setExams(data.exams);
+    setExamGroups(data.groups);
   }, []);
 
   const loadAnnouncements = useCallback(async () => {
@@ -219,7 +222,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
         )}
         {tab === "schedule" && <SchedulePanel schedule={schedule} reload={loadSchedule} notify={notify} />}
         {tab === "exams" && (
-          <ExamsPanel me={me} exams={exams} reload={loadExams} notify={notify} />
+          <ExamsPanel me={me} exams={exams} groups={examGroups} reload={loadExams} notify={notify} />
         )}
         {tab === "chat" && (
           <ChatPanel

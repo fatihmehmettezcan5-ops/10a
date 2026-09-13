@@ -569,6 +569,56 @@ export async function createMockExamBatch(userId: number, input: Record<string, 
   return { count: created.length, totalNet };
 }
 
+/** Düz satırları tek deneme kartlarına gruplar (ad + tarih bazlı). */
+export function buildMockExamGroups(rows: MockExamItem[]): MockExamGroup[] {
+  const map = new Map<string, MockExamGroup>();
+  for (const r of rows) {
+    const id = `${r.date}|${r.examName}`;
+    let g = map.get(id);
+    if (!g) {
+      g = { id, examName: r.examName, date: r.date, totalNet: 0, rows: [] };
+      map.set(id, g);
+    }
+    g.rows.push(r);
+  }
+  const order = new Map<string, number>(TYT_SUBJECTS.map((name, i) => [name, i] as const));
+  const groups = Array.from(map.values());
+  for (const g of groups) {
+    g.rows.sort(
+      (a, b) =>
+        (order.get(a.subject) ?? 99) - (order.get(b.subject) ?? 99) ||
+        a.subject.localeCompare(b.subject, "tr"),
+    );
+    g.totalNet = Math.round(g.rows.reduce((sum, r) => sum + r.net, 0) * 100) / 100;
+  }
+  return groups.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+}
+
+export type MockExamGroup = {
+  id: string; // "tarih|denemeAdi"
+  examName: string;
+  date: string;
+  totalNet: number;
+  rows: MockExamItem[];
+};
+
+/** Tüm denemeyi (aynı ad + tarihteki tüm ders satırları) siler. */
+export async function deleteMockExamGroup(id: string, userId: number, role: string) {
+  const sep = id.indexOf("|");
+  if (sep < 0) throw new HttpError(400, "Geçersiz deneme kimliği.");
+  const date = normalizeDate(id.slice(0, sep));
+  const examName = text(id.slice(sep + 1));
+  if (!date || examName.length < 2) throw new HttpError(400, "Geçersiz deneme kimliği.");
+  const filters = [eq(mockExams.date, date), eq(mockExams.examName, examName)];
+  if (role !== "admin") filters.push(eq(mockExams.userId, userId));
+  const deleted = await db
+    .delete(mockExams)
+    .where(and(...filters))
+    .returning({ id: mockExams.id });
+  if (deleted.length === 0) throw new HttpError(404, "Deneme bulunamadı.");
+  return { count: deleted.length };
+}
+
 export async function deleteMockExam(id: number, userId: number, role: string) {
   const rows = await db.select().from(mockExams).where(eq(mockExams.id, id)).limit(1);
   const row = rows[0];

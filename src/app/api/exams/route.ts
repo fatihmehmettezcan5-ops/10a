@@ -1,12 +1,13 @@
 import { jsonError, requireUser } from "@/lib/auth";
-import { createMockExam, listMockExams } from "@/lib/data";
+import { buildMockExamGroups, createMockExam, listMockExams } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const user = await requireUser();
-    return Response.json({ exams: await listMockExams(user.id) });
+    const exams = await listMockExams(user.id);
+    return Response.json({ exams, groups: buildMockExamGroups(exams) });
   } catch (error) {
     return jsonError(error);
   }

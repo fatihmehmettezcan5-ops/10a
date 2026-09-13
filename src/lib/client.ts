@@ -114,6 +114,14 @@ export type MemberItem = {
   createdAt: string;
 };
 
+export type MockExamGroup = {
+  id: string; // "tarih|denemeAdi"
+  examName: string;
+  date: string;
+  totalNet: number;
+  rows: ExamItem[];
+};
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const isForm = init?.body instanceof FormData;
   const response = await fetch(path, {
