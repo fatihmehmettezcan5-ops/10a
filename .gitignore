@@ -19,3 +19,7 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android imza anahtari repoya girmesin
+android.keystore
+*.jks
