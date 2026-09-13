@@ -9,6 +9,7 @@ import {
   type AssistantProject,
   type Me,
 } from "@/lib/client";
+import { BUBBLE_IN, BUBBLE_OUT, CHAT_BG_STYLE, dayKey, dayLabel, timeLabel } from "@/lib/chat-ui";
 
 type ProviderInfo = { label: string; model: string; id: string };
 type StagedFile = { file: File; previewUrl: string | null };
@@ -26,6 +27,14 @@ const SUGGESTIONS = [
   "Bana mor uzay temalı bir afiş üret",
   "Bir HTML sayaç sayfası yap (geri sayım)",
 ];
+
+function SendIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" />
+    </svg>
+  );
+}
 
 function escapeScript(code: string): string {
   return code.replace(/<\/script>/gi, "<\\/script>");
@@ -92,7 +101,13 @@ function CodeRunner({ code, language }: { code: string; language: string }) {
         return;
       }
       setLines((prev) => {
-        const next = [...prev, { kind: (d.type === "err" ? "err" : d.type === "status" ? "status" : "out") as "out" | "err" | "status", text: String(d.text ?? "") }];
+        const next = [
+          ...prev,
+          {
+            kind: (d.type === "err" ? "err" : d.type === "status" ? "status" : "out") as "out" | "err" | "status",
+            text: String(d.text ?? ""),
+          },
+        ];
         return next.slice(-60);
       });
     }
@@ -107,11 +122,14 @@ function CodeRunner({ code, language }: { code: string; language: string }) {
   const html = lang === "python" ? pyRunnerHtml(code) : jsRunnerHtml(code);
 
   return (
-    <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950/80 p-2 font-mono text-xs">
+    <div className="mt-2 rounded-lg border border-white/10 bg-[#0b141a] p-2 font-mono text-xs shadow-inner">
       <div className="max-h-44 space-y-0.5 overflow-y-auto">
         {lines.length === 0 && !done && <p className="text-slate-500">çalışıyor...</p>}
         {lines.map((line, i) => (
-          <p key={i} className={line.kind === "err" ? "text-rose-300" : line.kind === "status" ? "text-amber-300" : "text-slate-200"}>
+          <p
+            key={i}
+            className={line.kind === "err" ? "text-rose-300" : line.kind === "status" ? "text-amber-300" : "text-slate-200"}
+          >
             {line.text}
           </p>
         ))}
@@ -125,24 +143,24 @@ function CodeRunner({ code, language }: { code: string; language: string }) {
             setDone(false);
             setRunKey((k) => k + 1);
           }}
-          className="mt-1 rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300 hover:text-white"
+          className="mt-1 rounded bg-white/5 px-2 py-0.5 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white"
         >
           ↻ tekrar çalıştır
         </button>
       )}
-      <iframe
-        key={runKey}
-        title="kod-çalıştırıcı"
-        className="hidden"
-        sandbox="allow-scripts"
-        srcDoc={html}
-      />
+      <iframe key={runKey} title="kod-çalıştırıcı" className="hidden" sandbox="allow-scripts" srcDoc={html} />
     </div>
   );
 }
 
 const LANG_LABELS: Record<string, string> = {
-  html: "HTML", svg: "SVG", javascript: "JS", js: "JS", typescript: "TS", python: "Python", py: "Python",
+  html: "HTML",
+  svg: "SVG",
+  javascript: "JS",
+  js: "JS",
+  typescript: "TS",
+  python: "Python",
+  py: "Python",
 };
 
 function ArtifactCard({ artifact }: { artifact: AssistantArtifact }) {
@@ -153,7 +171,8 @@ function ArtifactCard({ artifact }: { artifact: AssistantArtifact }) {
   const [mode, setMode] = useState<"none" | "run" | "preview">("none");
 
   function download() {
-    const ext = lang.startsWith("py") ? "py" : lang === "javascript" || lang === "js" ? "js" : lang === "svg" ? "svg" : lang === "html" ? "html" : "txt";
+    const ext =
+      lang.startsWith("py") ? "py" : lang === "javascript" || lang === "js" ? "js" : lang === "svg" ? "svg" : lang === "html" ? "html" : "txt";
     const blob = new Blob([artifact.content], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -176,7 +195,7 @@ function ArtifactCard({ artifact }: { artifact: AssistantArtifact }) {
           <button
             type="button"
             onClick={() => setMode(mode === "preview" ? "none" : "preview")}
-            className="rounded bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:text-white"
+            className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-white/20 hover:text-white"
           >
             👁 önizleme
           </button>
@@ -190,26 +209,30 @@ function ArtifactCard({ artifact }: { artifact: AssistantArtifact }) {
             ▶ çalıştır
           </button>
         )}
-        <button type="button" onClick={download} className="rounded bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:text-white">
+        <button
+          type="button"
+          onClick={download}
+          className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-white/20 hover:text-white"
+        >
           ⬇ indir
         </button>
         <button
           type="button"
           onClick={() => void navigator.clipboard.writeText(artifact.content)}
-          className="rounded bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:text-white"
+          className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-white/20 hover:text-white"
         >
           📋 kopyala
         </button>
       </div>
       {open && (
-        <pre className="mt-2 max-h-52 overflow-auto rounded-lg bg-slate-950/80 p-2 font-mono text-[11px] leading-relaxed text-slate-200">
+        <pre className="mt-2 max-h-52 overflow-auto rounded-lg bg-[#0b141a] p-2 font-mono text-[11px] leading-relaxed text-slate-200">
           {artifact.content}
         </pre>
       )}
       {mode === "preview" && (
         <iframe
           title="artifact-önizleme"
-          className="mt-2 h-64 w-full rounded-lg border border-slate-700 bg-white"
+          className="mt-2 h-64 w-full rounded-lg border border-white/10 bg-white"
           sandbox="allow-scripts"
           srcDoc={artifact.content}
         />
@@ -222,6 +245,16 @@ function ArtifactCard({ artifact }: { artifact: AssistantArtifact }) {
 function metaOf(message: AssistantItem, type: string): { items?: unknown } | null {
   const action = message.actions?.find((a) => a.type === type);
   return action ? (action as unknown as { items?: unknown }) : null;
+}
+
+function DaySeparator({ iso }: { iso: string }) {
+  return (
+    <div className="my-3 flex justify-center">
+      <span className="rounded-lg bg-[#182229] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 shadow">
+        {dayLabel(iso)}
+      </span>
+    </div>
+  );
 }
 
 export default function AssistantPanel({
@@ -245,6 +278,7 @@ export default function AssistantPanel({
   const [newProject, setNewProject] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   function addFiles(list: FileList | null) {
     if (!list || list.length === 0) return;
@@ -321,10 +355,16 @@ export default function AssistantPanel({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, loading]);
 
+  function growTextarea(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+  }
+
   async function ask(text: string) {
     const question = text.trim();
     if ((!question && staged.length === 0) || loading) return;
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     const attachmentCount = staged.length;
     setMessages((prev) => [
       ...prev,
@@ -344,7 +384,7 @@ export default function AssistantPanel({
         provider: ProviderInfo;
         followups?: string[];
         artifacts?: AssistantArtifact[];
-        actions?: { type: string; ok: boolean; summary: string; url?: string }[];
+        actions?: { type: string; ok?: boolean; summary?: string; url?: string }[];
       };
       if (staged.length) {
         const form = new FormData();
@@ -377,7 +417,7 @@ export default function AssistantPanel({
         await onChanged();
         notify("Asistan uygulamada değişiklik yaptı ✨");
       }
-      void loadSide(); // yeni hafıza kayıtları
+      void loadSide();
     } catch (error) {
       notify(error instanceof Error ? error.message : "Asistan yanıt veremedi.");
     } finally {
@@ -427,93 +467,163 @@ export default function AssistantPanel({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-      <div className="card flex h-[72vh] flex-col p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-          <div>
-            <h1 className="text-lg font-bold text-white">🤖 Ödev Asistanı</h1>
-            <p className="text-xs text-slate-400">
-              Ödevleri bilir, dosya işler, görsel üretir, kod yazıp çalıştırır, web&apos;i araştırır; hafızası vardır.
+      <div className="card flex h-[76vh] flex-col overflow-hidden p-0">
+        {/* --------- WhatsApp tarzı başlık --------- */}
+        <div className="flex items-center gap-3 border-b border-[#0d1e26] bg-[#202c33] px-4 py-2.5">
+          <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-lg shadow">
+            🤖
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#202c33] bg-emerald-400" />
+          </span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <h1 className="truncate text-sm font-bold text-white">10A Asistan</h1>
+            <p className="truncate text-[11px] text-slate-400">
+              {provider ? `${provider.label} · ${provider.model}` : "bağlanıyor..."}
             </p>
           </div>
           {provider && (
             <span
-              className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+              className={`hidden rounded-full px-3 py-1 text-[11px] font-semibold sm:block ${
                 provider.id === "local" ? "bg-amber-500/15 text-amber-300" : "bg-emerald-500/15 text-emerald-300"
               }`}
             >
-              {provider.label} · {provider.model}
+              {provider.id === "local" ? "yerleşik mod" : "çevrimiçi"}
             </span>
           )}
         </div>
 
-        <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+        {/* --------- Mesaj alanı --------- */}
+        <div className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3" style={CHAT_BG_STYLE}>
           {messages.length === 0 && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 text-sm text-slate-300">
-              Selam {me.name.split(" ")[0]}! Ödev sorabilir, dosya bırakabilir, <b>&quot;görsel üret&quot;</b>,{" "}
-              <b>&quot;araştır&quot;</b>, <b>&quot;kod yaz&quot;</b> diyebilirsin. Önemli bilgilerini hafızama ekliyorum 🧠
+            <div className="flex h-full items-center justify-center px-4">
+              <div className="max-w-sm rounded-xl bg-[#182229]/90 px-4 py-3 text-center text-xs leading-relaxed text-slate-400 shadow">
+                Selam <b className="text-slate-200">{me.name.split(" ")[0]}</b>! 👋
+                <br />
+                Ödev sorabilir, dosya bırakabilir; <b className="text-emerald-300">&quot;görsel üret&quot;</b>,{" "}
+                <b className="text-emerald-300">&quot;araştır&quot;</b>, <b className="text-emerald-300">&quot;kod yaz&quot;</b>{" "}
+                diyebilirsin. Önemli bilgilerini hafızama ekliyorum 🧠
+              </div>
             </div>
           )}
-          {messages.map((message) => {
+
+          {messages.map((message, idx) => {
+            const prev = idx > 0 ? messages[idx - 1] : null;
+            const mine = message.role === "user";
+            const grouped =
+              !!prev &&
+              prev.role === message.role &&
+              dayKey(prev.createdAt) === dayKey(message.createdAt) &&
+              new Date(message.createdAt).getTime() - new Date(prev.createdAt).getTime() < 5 * 60 * 1000;
+            const newDay = !prev || dayKey(prev.createdAt) !== dayKey(message.createdAt);
+
+            const bubbleBg = mine ? BUBBLE_OUT : BUBBLE_IN;
+            const bubbleText = mine ? "text-white" : "text-slate-100";
+            const radius = mine
+              ? grouped
+                ? "rounded-lg"
+                : "rounded-lg rounded-tr-none"
+              : grouped
+                ? "rounded-lg"
+                : "rounded-lg rounded-tl-none";
+
             const artifactsMeta = metaOf(message, "_meta_artifacts") as { items?: AssistantArtifact[] } | null;
             const followupsMeta = metaOf(message, "_meta_followups") as { items?: string[] } | null;
-            const imageResults = (message.actions ?? []).filter(
-              (a) => a.type === "generate_image" && a.ok && a.url,
-            );
+            const imageResults = (message.actions ?? []).filter((a) => a.type === "generate_image" && a.ok && a.url);
+
             return (
-              <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={message.id}>
+                {newDay && <DaySeparator iso={message.createdAt} />}
                 <div
-                  className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-sm ${
-                    message.role === "user"
-                      ? "rounded-tr-sm bg-gradient-to-br from-indigo-500 to-violet-600 text-white"
-                      : "rounded-tl-sm border border-slate-700/70 bg-slate-800/70 text-slate-100"
-                  }`}
+                  className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "mt-0.5" : "mt-2"}`}
                 >
-                  {message.content}
-                  {imageResults.map((r, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={r.url}
-                      alt={r.summary}
-                      className="mt-2 max-h-72 w-auto max-w-full rounded-xl border border-white/10"
-                      loading="lazy"
-                    />
-                  ))}
-                  {artifactsMeta?.items?.map((artifact, i) => (
-                    <ArtifactCard key={i} artifact={artifact} />
-                  ))}
-                  {message.id === lastAssistantId && followupsMeta?.items && followupsMeta.items.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {followupsMeta.items.map((f, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => void ask(f)}
-                          disabled={loading}
-                          className="rounded-full border border-indigo-500/40 bg-indigo-500/10 px-2.5 py-1 text-[11px] text-indigo-200 transition hover:bg-indigo-500/25 hover:text-white"
-                        >
-                          {f}
-                        </button>
-                      ))}
-                    </div>
+                  {!mine && (
+                    <span className="w-8 shrink-0" aria-hidden>
+                      {!grouped && (
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm shadow">
+                          🤖
+                        </span>
+                      )}
+                    </span>
                   )}
+                  <div className={`relative max-w-[85%] ${mine ? "order-first" : ""}`}>
+                    {!grouped && (
+                      <span
+                        aria-hidden
+                        className={`absolute top-0 h-3 w-3 ${mine ? "right-[-7px]" : "left-[-7px]"}`}
+                        style={{
+                          background: bubbleBg,
+                          clipPath: mine ? "polygon(0 0, 100% 0, 100% 100%)" : "polygon(0 0, 100% 0, 0 100%)",
+                        }}
+                      />
+                    )}
+                    <div
+                      className={`relative whitespace-pre-wrap break-words px-2.5 py-1.5 text-[13.5px] leading-relaxed shadow-sm ${bubbleBg} ${bubbleText} ${radius}`}
+                    >
+                      <span>{message.content}</span>
+
+                      {imageResults.map((r, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          src={r.url}
+                          alt={r.summary ?? "üretilen görsel"}
+                          className="mt-1.5 max-h-72 w-auto max-w-full rounded-lg border border-white/10"
+                          loading="lazy"
+                        />
+                      ))}
+                      {artifactsMeta?.items?.map((artifact, i) => <ArtifactCard key={i} artifact={artifact} />)}
+
+                      <div
+                        className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none ${
+                          mine ? "text-emerald-100/75" : "text-slate-400/80"
+                        }`}
+                      >
+                        <span>{timeLabel(message.createdAt)}</span>
+                        {mine && <span className="text-[9px] tracking-tighter">✓✓</span>}
+                      </div>
+
+                      {message.id === lastAssistantId && followupsMeta?.items && followupsMeta.items.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {followupsMeta.items.map((f, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => void ask(f)}
+                              disabled={loading}
+                              className="rounded-full border border-[#00a884]/50 bg-[#00a884]/10 px-2.5 py-1 text-[11px] text-emerald-200 transition hover:bg-[#00a884]/25 hover:text-white"
+                            >
+                              {f}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );
           })}
+
           {loading && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl rounded-tl-sm border border-slate-700/70 bg-slate-800/70 px-3.5 py-2.5 text-sm text-slate-400">
-                düşünüyor{research ? " ve araştırıyor" : ""}
-                <span className="animate-pulse">...</span>
+            <div className="mt-2 flex items-end gap-2">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm shadow">
+                🤖
+              </span>
+              <div className="relative rounded-lg rounded-tl-none bg-[#202c33] px-3 py-2.5 shadow-sm">
+                <span aria-hidden className="absolute left-[-7px] top-0 h-3 w-3" style={{ background: BUBBLE_IN, clipPath: "polygon(0 0, 100% 0, 0 100%)" }} />
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
+                </span>
               </div>
             </div>
           )}
           <div ref={bottomRef} />
         </div>
 
+        {/* --------- Ek şeridi --------- */}
         {staged.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 border-t border-[#0d1e26] bg-[#111b21] px-3 py-2">
             {staged.map((item, index) => (
               <span
                 key={`${item.file.name}-${index}`}
@@ -539,52 +649,76 @@ export default function AssistantPanel({
           </div>
         )}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void ask(input);
-          }}
-          className="mt-3 flex gap-2 border-t border-slate-800 pt-3"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,application/pdf"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              addFiles(e.target.files);
-              e.target.value = "";
+        {/* --------- Giriş alanı (pill) --------- */}
+        <div className="border-t border-[#0d1e26] bg-[#111b21] px-3 py-2.5">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void ask(input);
             }}
-          />
-          <button
-            type="button"
-            className="btn btn-ghost px-3"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading || staged.length >= MAX_FILES}
-            title="Fotoğraf veya PDF ekle"
+            className="flex items-end gap-2"
           >
-            📎
-          </button>
-          <button
-            type="button"
-            onClick={() => setResearch((v) => !v)}
-            className={`btn px-3 ${research ? "btn-primary" : "btn-ghost"}`}
-            title="Araştırma Modu: cevaplamadan önce web'de arar"
-          >
-            🔬{research ? " açık" : ""}
-          </button>
-          <input
-            className="input flex-1"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Asistana sor ya da komut ver..."
-            disabled={loading}
-          />
-          <button className="btn btn-primary" disabled={loading || (!input.trim() && staged.length === 0)}>
-            Gönder
-          </button>
-        </form>
+            <div className="flex min-h-[44px] flex-1 items-end gap-1 rounded-3xl bg-[#2a3942] px-2 py-1.5">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,application/pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  addFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg text-slate-400 transition hover:bg-white/5 hover:text-slate-200"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || staged.length >= MAX_FILES}
+                title="Fotoğraf veya PDF ekle"
+                aria-label="Dosya ekle"
+              >
+                📎
+              </button>
+              <button
+                type="button"
+                onClick={() => setResearch((v) => !v)}
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-base transition ${
+                  research ? "bg-[#00a884]/20 text-emerald-300" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                }`}
+                title="Araştırma Modu: cevaplamadan önce web'de arar"
+                aria-label="Araştırma modu"
+              >
+                🔬
+              </button>
+              <textarea
+                ref={inputRef}
+                className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-[13.5px] text-slate-100 outline-none placeholder:text-slate-500"
+                value={input}
+                rows={1}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  growTextarea(e.target);
+                }}
+                placeholder={research ? "Araştırma modu açık — ne araştırayım?" : "Asistana sor ya da komut ver..."}
+                disabled={loading}
+              />
+            </div>
+            <button
+              type="submit"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-emerald-500 text-white shadow-lg transition hover:bg-emerald-400 disabled:opacity-40"
+              disabled={loading || (!input.trim() && staged.length === 0)}
+              aria-label="Gönder"
+            >
+              {loading ? <span className="animate-pulse text-xs">···</span> : <SendIcon className="h-5 w-5" />}
+            </button>
+          </form>
+          {research && (
+            <p className="mt-1.5 pl-2 text-[10px] text-emerald-300/90">
+              🔬 Araştırma modu açık: cevaplamadan önce web&apos;de arar, kaynakları gösterir.
+            </p>
+          )}
+        </div>
       </div>
 
       <aside className="space-y-4">
@@ -599,7 +733,7 @@ export default function AssistantPanel({
               }}
               className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
                 activeProject === null
-                  ? "border-indigo-400 bg-indigo-500/20 text-white"
+                  ? "border-emerald-400 bg-emerald-500/20 text-white"
                   : "border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white"
               }`}
             >
@@ -615,7 +749,7 @@ export default function AssistantPanel({
                   }}
                   className={`rounded-lg border px-2.5 py-1 pr-5 text-xs font-semibold transition ${
                     activeProject === p.id
-                      ? "border-indigo-400 bg-indigo-500/20 text-white"
+                      ? "border-emerald-400 bg-emerald-500/20 text-white"
                       : "border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white"
                   }`}
                 >
@@ -660,7 +794,10 @@ export default function AssistantPanel({
           ) : (
             <ul className="max-h-52 space-y-1.5 overflow-y-auto pr-1">
               {memories.map((m) => (
-                <li key={m.id} className="flex items-start gap-2 rounded-lg bg-slate-900/60 px-2 py-1.5 text-xs text-slate-200">
+                <li
+                  key={m.id}
+                  className="flex items-start gap-2 rounded-lg bg-slate-900/60 px-2 py-1.5 text-xs text-slate-200"
+                >
                   <span className="min-w-0 flex-1">{m.content}</span>
                   <button
                     type="button"
@@ -684,7 +821,7 @@ export default function AssistantPanel({
                 key={suggestion}
                 onClick={() => void ask(suggestion)}
                 disabled={loading}
-                className="w-full rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-left text-xs text-slate-300 transition hover:border-indigo-500/50 hover:text-white"
+                className="w-full rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-left text-xs text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
               >
                 {suggestion}
               </button>
