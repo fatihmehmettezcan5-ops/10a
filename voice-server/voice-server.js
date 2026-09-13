@@ -18,6 +18,9 @@ const crypto = require("crypto");
 const PORT = process.env.PORT || 3001;
 const SHARED_SECRET = process.env.VOICE_SECRET || "degistir-beni-render-env-de";
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || ""; // örn. https://10asinifi.netlify.app
+// Dead connection temizliği: Render proxy'si yarı-kapanan TCP'yi bildirmez;
+// sunucu düzenli ping atar, pong döneyeni yaşıyor sayar.
+const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30000);
 
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
@@ -131,6 +134,7 @@ server.on("upgrade", (req, socket) => {
   };
 
   socket.on("data", (buf) => {
+    client.alive = true; // her gelen veri yaşam sinyali sayılır
     for (const frame of decodeFrames(buf)) {
       if (frame.opcode === 0x8) {
         leaveRoom(client);
@@ -141,6 +145,9 @@ server.on("upgrade", (req, socket) => {
         socket.write(encodeFrame(frame.data, 0xa)); // ping -> pong
         continue;
       }
+      if (frame.opcode === 0xa) {
+        continue; // sunucu ping'ine pong — alive yukarıda işaretlendi
+      }
       try {
         const msg = JSON.parse(frame.data);
         handleMessage(client, msg);
@@ -149,6 +156,7 @@ server.on("upgrade", (req, socket) => {
   });
 
   socket.on("close", () => leaveRoom(client));
+  socket.on("end", () => leaveRoom(client));
   socket.on("error", () => leaveRoom(client));
 });
 
@@ -217,16 +225,21 @@ function handleMessage(client, msg) {
 }
 
 setInterval(() => {
-  // Boş odaları temizle + dead connection'ları at
+  // Heartbeat: ping gönder, önceki turda pong dönmeyeni at
   for (const [roomId, set] of rooms) {
-    for (const c of set) {
+    for (const c of Array.from(set)) {
       if (!c.alive) {
         set.delete(c);
-        if (set.size === 0) rooms.delete(roomId);
+        try { c.socket.destroy(); } catch {}
+        broadcast(roomId, { type: "user-left", name: c.name });
+        continue;
       }
+      c.alive = false;
+      try { c.socket.write(encodeFrame("", 0x9)); } catch {}
     }
+    if (set.size === 0) rooms.delete(roomId);
   }
-}, 30000);
+}, HEARTBEAT_MS);
 
 server.listen(PORT, () => {
   console.log(`Voice server listening on :${PORT}`);

@@ -231,7 +231,7 @@ export default function VoicePanel({
         )}
         {status?.voiceUrl === null && (
           <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-            Ses sunucusu henüz yapılandırılmadı. Render&apos;da voice-server&apos;ı kurun, ortam değişkenlerine VOICE_URL ekleyin.
+            Ses sunucusu henüz yapılandırılmadı. Netlify ortam değişkenlerine VOICE_SECRET ekleyin.
           </div>
         )}
         {status && <p className="mt-2 text-[10px] text-slate-500">Şu an seste {status.online} kişi var.</p>}

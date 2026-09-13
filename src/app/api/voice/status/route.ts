@@ -2,16 +2,20 @@ import { jsonError, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+/** Render'daki ses sunucusunun adresi (env ile ezilebilir). */
+const DEFAULT_VOICE_URL = "https://one0a-voice.onrender.com";
+
 /** Ses sunucusunun anlık durumu (oda dolulukları). */
 export async function GET() {
   try {
     await requireUser();
-    const url = process.env.VOICE_URL?.trim();
-    if (!url) {
+    const secret = process.env.VOICE_SECRET?.trim();
+    if (!secret) {
       return Response.json({ voiceUrl: null, online: 0, rooms: [] });
     }
+    const url = (process.env.VOICE_URL?.trim() || DEFAULT_VOICE_URL).replace(/\/$/, "");
     try {
-      const res = await fetch(`${url.replace(/\/$/, "")}/health`, {
+      const res = await fetch(`${url}/health`, {
         signal: AbortSignal.timeout(4000),
         cache: "no-store",
       });
