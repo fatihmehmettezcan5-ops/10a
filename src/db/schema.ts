@@ -101,6 +101,26 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Deneme / net takibi: her satır bir (deneme, ders) sonucudur. Net = doğru - yanlış/4. */
+export const mockExams = pgTable(
+  "mock_exams",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    examName: text("exam_name").notNull(),
+    examType: text("exam_type").notNull().default("TYT"), // TYT | AYT | Ders
+    subject: text("subject").notNull().default("Genel"),
+    date: text("date").notNull(), // YYYY-MM-DD
+    correct: integer("correct").notNull().default(0),
+    wrong: integer("wrong").notNull().default(0),
+    empty: integer("empty").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("mock_exams_user_date_idx").on(table.userId, table.date)],
+);
+
 export const assistantMessages = pgTable("assistant_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
@@ -119,3 +139,4 @@ export type ClassEvent = typeof events.$inferSelect;
 export type ScheduleSlot = typeof scheduleSlots.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type AssistantMessage = typeof assistantMessages.$inferSelect;
+export type MockExam = typeof mockExams.$inferSelect;

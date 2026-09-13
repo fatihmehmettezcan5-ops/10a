@@ -6,6 +6,7 @@ import {
   api,
   type ChatItem,
   type EventItem,
+  type ExamItem,
   type HomeworkItem,
   type Me,
   type SlotItem,
@@ -16,6 +17,7 @@ import OverviewPanel from "@/components/panels/OverviewPanel";
 import HomeworkPanel from "@/components/panels/HomeworkPanel";
 import CalendarPanel from "@/components/panels/CalendarPanel";
 import SchedulePanel from "@/components/panels/SchedulePanel";
+import ExamsPanel from "@/components/panels/ExamsPanel";
 import ChatPanel from "@/components/panels/ChatPanel";
 import AssistantPanel from "@/components/panels/AssistantPanel";
 import ProfileModal from "@/components/ProfileModal";
@@ -25,6 +27,7 @@ const TABS = [
   { id: "homework", label: "Ödevler", icon: "📚" },
   { id: "calendar", label: "Takvim", icon: "🗓️" },
   { id: "schedule", label: "Ders Programı", icon: "⏰" },
+  { id: "exams", label: "Denemeler", icon: "📊" },
   { id: "chat", label: "Sınıf Sohbeti", icon: "💬" },
   { id: "assistant", label: "Ödev Asistanı", icon: "🤖" },
 ] as const;
@@ -39,6 +42,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
   const [homeworks, setHomeworks] = useState<HomeworkItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [schedule, setSchedule] = useState<SlotItem[]>([]);
+  const [exams, setExams] = useState<ExamItem[]>([]);
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [chatDraft, setChatDraft] = useState("");
@@ -64,6 +68,11 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
     setSchedule(data.schedule);
   }, []);
 
+  const loadExams = useCallback(async () => {
+    const data = await api<{ exams: ExamItem[] }>("/api/exams");
+    setExams(data.exams);
+  }, []);
+
   const loadMessages = useCallback(async () => {
     const data = await api<{ messages: ChatItem[] }>("/api/messages");
     setMessages(data.messages);
@@ -75,10 +84,10 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
   }, []);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([loadHomeworks(), loadEvents(), loadSchedule(), loadMessages(), loadStats()]).catch(
+    await Promise.all([loadHomeworks(), loadEvents(), loadSchedule(), loadMessages(), loadStats(), loadExams()]).catch(
       (error: unknown) => notify(error instanceof Error ? error.message : "Veri yüklenemedi."),
     );
-  }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, notify]);
+  }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, loadExams, notify]);
 
   useEffect(() => {
     // İlk veri yüklemesi effect içinde yapılıyor; setState burada senkron çağrılmıyor
@@ -187,6 +196,9 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
           />
         )}
         {tab === "schedule" && <SchedulePanel schedule={schedule} reload={loadSchedule} notify={notify} />}
+        {tab === "exams" && (
+          <ExamsPanel me={me} exams={exams} reload={loadExams} notify={notify} />
+        )}
         {tab === "chat" && (
           <ChatPanel
             me={me}

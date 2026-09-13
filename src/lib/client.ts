@@ -82,6 +82,19 @@ export type Stats = {
   upcoming: { id: number; title: string; date: string; scope: string; type: string }[];
 };
 
+export type ExamItem = {
+  id: number;
+  examName: string;
+  examType: string;
+  subject: string;
+  date: string;
+  correct: number;
+  wrong: number;
+  empty: number;
+  net: number;
+  createdAt: string;
+};
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const isForm = init?.body instanceof FormData;
   const response = await fetch(path, {

@@ -5,6 +5,7 @@ import {
   homeworks,
   homeworkUpdates,
   messages,
+  mockExams,
   scheduleSlots,
   users,
 } from "@/db/schema";
@@ -466,6 +467,79 @@ export async function saveAssistantMessage(
     .values({ userId, role, content, actions })
     .returning();
   return created;
+}
+
+/* ------------------------------ DENEMELER --------------------------------- */
+
+export type MockExamItem = {
+  id: number;
+  examName: string;
+  examType: string;
+  subject: string;
+  date: string;
+  correct: number;
+  wrong: number;
+  empty: number;
+  net: number;
+  createdAt: string;
+};
+
+export async function listMockExams(userId: number): Promise<MockExamItem[]> {
+  const rows = await db
+    .select()
+    .from(mockExams)
+    .where(eq(mockExams.userId, userId))
+    .orderBy(desc(mockExams.date), desc(mockExams.id));
+  return rows.map((r) => ({
+    id: r.id,
+    examName: r.examName,
+    examType: r.examType,
+    subject: r.subject,
+    date: r.date,
+    correct: r.correct,
+    wrong: r.wrong,
+    empty: r.empty,
+    net: Math.round((r.correct - r.wrong / 4) * 100) / 100,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+function countField(value: unknown, label: string): number {
+  if (value === undefined || value === null || value === "") return 0;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > 500) {
+    throw new HttpError(400, `${label} 0 ile 500 arasında bir sayı olmalı.`);
+  }
+  return n;
+}
+
+export async function createMockExam(userId: number, input: Record<string, unknown>) {
+  const examName = text(input.examName);
+  if (examName.length < 2) throw new HttpError(400, "Deneme adı en az 2 karakter olmalı.");
+  const date = normalizeDate(input.date);
+  if (!date) throw new HttpError(400, "Geçerli bir tarih seç (YYYY-AA-GG).");
+  const examType = ["TYT", "AYT", "Ders"].includes(text(input.examType)) ? text(input.examType) : "TYT";
+  const subject = text(input.subject) || "Genel";
+  const correct = countField(input.correct, "Doğru sayısı");
+  const wrong = countField(input.wrong, "Yanlış sayısı");
+  const empty = countField(input.empty, "Boş sayısı");
+
+  const [created] = await db
+    .insert(mockExams)
+    .values({ userId, examName, examType, subject, date, correct, wrong, empty })
+    .returning();
+  return { ...created, net: Math.round((created.correct - created.wrong / 4) * 100) / 100 };
+}
+
+export async function deleteMockExam(id: number, userId: number, role: string) {
+  const rows = await db.select().from(mockExams).where(eq(mockExams.id, id)).limit(1);
+  const row = rows[0];
+  if (!row) throw new HttpError(404, "Deneme kaydı bulunamadı.");
+  if (row.userId !== userId && role !== "admin") {
+    throw new HttpError(403, "Bu kaydı sadece sahibi silebilir.");
+  }
+  await db.delete(mockExams).where(eq(mockExams.id, id));
+  return { id };
 }
 
 /* -------------------------------- ÖZETLER --------------------------------- */
