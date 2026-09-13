@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api, type SlotItem } from "@/lib/client";
-import { DAY_NAMES } from "@/lib/constants";
+import { bellTimes, DAY_NAMES } from "@/lib/constants";
 
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -124,12 +124,12 @@ export default function SchedulePanel({
           </thead>
           <tbody>
             {PERIODS.map((period) => {
-              const sample = schedule.find((s) => s.period === period);
+              const [startTime, endTime] = bellTimes(1, period);
               return (
                 <tr key={period}>
                   <td className="rounded-lg bg-slate-900/60 px-2 py-2 text-center align-middle">
                     <div className="text-xs font-bold text-slate-300">{period}.</div>
-                    <div className="text-[9px] text-slate-500">{sample?.startTime ?? ""}</div>
+                    <div className="text-[9px] text-slate-500">{startTime}–{endTime}</div>
                   </td>
                   {DAY_NAMES.map((_, dayIndex) => {
                     const day = dayIndex + 1;

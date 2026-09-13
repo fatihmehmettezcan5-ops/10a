@@ -50,6 +50,39 @@ export const EVENT_TYPE_EMOJI: Record<EventType, string> = {
 
 export const DAY_NAMES = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 
+/**
+ * Zil çizelgesi: 08:20 başlangıç, 40 dk ders + 10 dk teneffüs.
+ * Öğle arası 12:20-13:10. Cuma günleri öğle arası 13:20'ye uzar ve
+ * telafisi için öğleden sonra teneffüsler 5 dakikadır; yine 15:30'da bitiş.
+ */
+export const BELL_WEEKDAY: [string, string][] = [
+  ["08:20", "09:00"],
+  ["09:10", "09:50"],
+  ["10:00", "10:40"],
+  ["10:50", "11:30"],
+  ["11:40", "12:20"],
+  ["13:10", "13:50"],
+  ["14:00", "14:40"],
+  ["14:50", "15:30"],
+];
+
+export const BELL_FRIDAY: [string, string][] = [
+  ["08:20", "09:00"],
+  ["09:10", "09:50"],
+  ["10:00", "10:40"],
+  ["10:50", "11:30"],
+  ["11:40", "12:20"],
+  ["13:20", "14:00"],
+  ["14:05", "14:45"],
+  ["14:50", "15:30"],
+];
+
+/** Gün ve ders sırasına göre resmî zil saatleri (5 = Cuma). */
+export function bellTimes(dayOfWeek: number, period: number): [string, string] {
+  const table = dayOfWeek === 5 ? BELL_FRIDAY : BELL_WEEKDAY;
+  return table[period - 1] ?? ["", ""];
+}
+
 export const SUBJECTS = [
   "Matematik",
   "Fizik",

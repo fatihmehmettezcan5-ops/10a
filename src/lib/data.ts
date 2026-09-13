@@ -10,7 +10,7 @@ import {
 } from "@/db/schema";
 import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { HttpError } from "@/lib/auth";
-import { HOMEWORK_STATUSES, PRIORITIES, EVENT_TYPES, todayISO } from "@/lib/constants";
+import { HOMEWORK_STATUSES, PRIORITIES, EVENT_TYPES, todayISO, bellTimes } from "@/lib/constants";
 
 export type HomeworkWithMeta = {
   id: number;
@@ -296,23 +296,12 @@ export async function deleteEvent(eventId: number, userId: number, role: string)
 
 /* ----------------------------- DERS PROGRAMI ------------------------------ */
 
-const DEFAULT_TIMES = [
-  ["08:40", "09:20"],
-  ["09:30", "10:10"],
-  ["10:20", "11:00"],
-  ["11:10", "11:50"],
-  ["12:40", "13:20"],
-  ["13:30", "14:10"],
-  ["14:20", "15:00"],
-  ["15:10", "15:50"],
-];
-
 const DEFAULT_PROGRAM: string[][] = [
-  ["Matematik", "Matematik", "Türk Dili ve Edebiyatı", "Fizik", "İngilizce", "Din Kültürü", "Rehberlik"],
-  ["Kimya", "Kimya", "Matematik", "Matematik", "Tarih", "Tarih", "Beden Eğitimi"],
-  ["Türk Dili ve Edebiyatı", "Türk Dili ve Edebiyatı", "Biyoloji", "Biyoloji", "Coğrafya", "İngilizce", "Bilişim"],
-  ["Fizik", "Fizik", "Matematik", "İngilizce", "Felsefe", "Felsefe", "Görsel Sanatlar"],
-  ["Matematik", "Türk Dili ve Edebiyatı", "Kimya", "Coğrafya", "Biyoloji", "Beden Eğitimi", "Rehberlik"],
+  ["Matematik", "Matematik", "Türk Dili ve Edebiyatı", "Fizik", "İngilizce", "Din Kültürü", "Rehberlik", "Etüt"],
+  ["Kimya", "Kimya", "Matematik", "Matematik", "Tarih", "Tarih", "Beden Eğitimi", "Etüt"],
+  ["Türk Dili ve Edebiyatı", "Türk Dili ve Edebiyatı", "Biyoloji", "Biyoloji", "Coğrafya", "İngilizce", "Bilişim", "Etüt"],
+  ["Fizik", "Fizik", "Matematik", "İngilizce", "Felsefe", "Felsefe", "Görsel Sanatlar", "Etüt"],
+  ["Matematik", "Türk Dili ve Edebiyatı", "Kimya", "Coğrafya", "Biyoloji", "Beden Eğitimi", "Rehberlik", "Etüt"],
 ];
 
 export async function getSchedule() {
@@ -325,12 +314,33 @@ export async function getSchedule() {
         subject,
         teacher: "",
         room: "10/A",
-        startTime: DEFAULT_TIMES[periodIndex][0],
-        endTime: DEFAULT_TIMES[periodIndex][1],
+        startTime: bellTimes(dayIndex + 1, periodIndex + 1)[0],
+        endTime: bellTimes(dayIndex + 1, periodIndex + 1)[1],
       })),
     );
     await db.insert(scheduleSlots).values(seed).onConflictDoNothing();
     rows = await db.select().from(scheduleSlots).orderBy(asc(scheduleSlots.dayOfWeek), asc(scheduleSlots.period));
+  } else {
+    // Zil çizelgesi değişirse (ör. okul saati güncellenir) eski kayıtlar otomatik düzeltilir.
+    const stale = rows.filter((r) => {
+      const [start, end] = bellTimes(r.dayOfWeek, r.period);
+      return (start && r.startTime !== start) || (end && r.endTime !== end);
+    });
+    if (stale.length) {
+      await Promise.all(
+        stale.map((r) => {
+          const [start, end] = bellTimes(r.dayOfWeek, r.period);
+          return db
+            .update(scheduleSlots)
+            .set({ startTime: start, endTime: end })
+            .where(eq(scheduleSlots.id, r.id));
+        }),
+      );
+      rows = await db
+        .select()
+        .from(scheduleSlots)
+        .orderBy(asc(scheduleSlots.dayOfWeek), asc(scheduleSlots.period));
+    }
   }
   return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
 }
@@ -345,7 +355,7 @@ export async function upsertScheduleSlot(input: Record<string, unknown>) {
     throw new HttpError(400, "Ders saati 1 ile 8 arasında olmalı.");
   }
   const subject = text(input.subject);
-  const times = DEFAULT_TIMES[period - 1] ?? ["", ""];
+  const [startTime, endTime] = bellTimes(dayOfWeek, period);
 
   if (!subject) {
     await db
@@ -362,8 +372,8 @@ export async function upsertScheduleSlot(input: Record<string, unknown>) {
       subject,
       teacher: text(input.teacher),
       room: text(input.room),
-      startTime: text(input.startTime, times[0]) || times[0],
-      endTime: text(input.endTime, times[1]) || times[1],
+      startTime,
+      endTime,
     })
     .onConflictDoUpdate({
       target: [scheduleSlots.dayOfWeek, scheduleSlots.period],
@@ -371,6 +381,8 @@ export async function upsertScheduleSlot(input: Record<string, unknown>) {
         subject,
         teacher: text(input.teacher),
         room: text(input.room),
+        startTime,
+        endTime,
         updatedAt: new Date(),
       },
     })
