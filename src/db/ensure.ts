@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { pool } from "./index";
 
 /**
@@ -8,6 +9,31 @@ import { pool } from "./index";
  */
 const STATEMENTS = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS vc text`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachments jsonb DEFAULT '[]'::jsonb`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS mentions jsonb DEFAULT '[]'::jsonb`,
+  `CREATE TABLE IF NOT EXISTS chat_files (
+     id text PRIMARY KEY,
+     name text NOT NULL,
+     mime text NOT NULL DEFAULT 'application/octet-stream',
+     size integer NOT NULL DEFAULT 0,
+     data text NOT NULL,
+     uploader_id integer REFERENCES users(id) ON DELETE SET NULL,
+     created_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  `CREATE TABLE IF NOT EXISTS ai_memory (
+     id serial PRIMARY KEY,
+     user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     content text NOT NULL,
+     created_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  `CREATE TABLE IF NOT EXISTS assistant_projects (
+     id serial PRIMARY KEY,
+     user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     name text NOT NULL,
+     note text NOT NULL DEFAULT '',
+     created_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  `ALTER TABLE assistant_messages ADD COLUMN IF NOT EXISTS project_id integer`,
 ] as const;
 
 let done: Promise<void> | null = null;
@@ -25,3 +51,6 @@ export function ensureSchema(): Promise<void> {
   }
   return done;
 }
+
+// sql importu drizzle tipleri için (kullanılmıyorsa derleyici kaldırmaz)
+void sql;

@@ -1,13 +1,17 @@
 import { jsonError, requireUser, HttpError } from "@/lib/auth";
 import {
+  addMemory,
+  getProject,
   getSchedule,
   listAssistantMessages,
   listEvents,
   listHomeworks,
+  listMemory,
   saveAssistantMessage,
 } from "@/lib/data";
 import { buildContext, executeActions, TOOL_GUIDE, type ActionResult } from "@/lib/ai/tools";
 import { detectProvider, extractJson, runModel, type Attachment, type ChatTurn } from "@/lib/ai/provider";
+import { formatResearchBlock, researchWeb } from "@/lib/ai/research";
 import { localAssistant, type Snapshot } from "@/lib/ai/fallback";
 import { CLASS_NAME } from "@/lib/constants";
 
@@ -35,6 +39,8 @@ async function parseAssistantRequest(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const attachments: Attachment[] = [];
   let message = "";
+  let research = false;
+  let projectId: number | null = null;
 
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
@@ -74,17 +80,22 @@ async function parseAssistantRequest(request: Request) {
   } else {
     const body = (await request.json()) as Record<string, unknown>;
     message = String(body.message ?? "").trim();
+    research = body.research === true;
+    const pid = Number(body.projectId);
+    projectId = Number.isInteger(pid) && pid > 0 ? pid : null;
   }
 
-  return { message, attachments };
+  return { message, attachments, research, projectId };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireUser();
     const provider = detectProvider();
+    const pid = Number(new URL(request.url).searchParams.get("project"));
+    const projectId = Number.isInteger(pid) && pid > 0 ? pid : undefined;
     return Response.json({
-      messages: await listAssistantMessages(user.id),
+      messages: await listAssistantMessages(user.id, 40, projectId ?? undefined),
       provider: { label: provider.label, model: provider.model, id: provider.id },
     });
   } catch (error) {
@@ -122,36 +133,58 @@ async function buildSnapshot(userId: number, userName: string): Promise<Snapshot
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
-    const { message, attachments } = await parseAssistantRequest(request);
+    const { message, attachments, research, projectId } = await parseAssistantRequest(request);
     if (!message && attachments.length === 0) throw new HttpError(400, "Bir şeyler yazmalısın.");
     if (message.length > 2000) throw new HttpError(400, "Mesaj çok uzun.");
 
+    const project = projectId ? await getProject(user.id, projectId) : null;
+    const memories = await listMemory(user.id, 30);
     const stored = `${message}${attachments.map((a) => ` [📎 ${a.name}]`).join("")}`;
-    await saveAssistantMessage(user.id, "user", stored);
+    await saveAssistantMessage(user.id, "user", stored, [], projectId ?? null);
 
     const provider = detectProvider();
     let activeProvider = provider;
     let reply = "";
     let actions: Record<string, unknown>[] = [];
+    let followups: string[] = [];
+    let artifacts: { title: string; language: string; content: string }[] = [];
     let note = "";
 
     if (provider.id !== "local") {
       try {
         const [context, history] = await Promise.all([
           buildContext(user),
-          listAssistantMessages(user.id, 10),
+          listAssistantMessages(user.id, 10, projectId ?? 0),
         ]);
+
+        // Araştırma Modu: model çağrısından ÖNCE web araması yapılıp bağlama eklenir.
+        let researchBlock = "";
+        if (research) {
+          const results = await researchWeb(message);
+          researchBlock = formatResearchBlock(results);
+          if (!results.length) note = "\n\n_(Araştırma: web araması şu an sonuç döndürmedi.)_";
+        }
+
+        const memoryBlock = memories.length
+          ? `\n\nKullanıcı hakkında hatırladıkların (uzun vadeli hafıza):\n${memories.map((m) => `- ${m.content}`).join("\n")}`
+          : "";
+        const projectBlock = project
+          ? `\n\nAktif proje: "${project.name}"${project.note ? `\nProje notu: ${project.note}` : ""}`
+          : "";
 
         const system = `Sen ${CLASS_NAME} sınıfının "Ödev Asistanı"sın. Türkçe, kısa ve samimi konuşursun.
 Sınıfın ödevlerini, takvimini, ders programını ve sohbetini bilirsin; kullanıcı istediğinde bunları DEĞİŞTİREBİLİRSİN.
 Kullanıcı mesaja ödev fotoğrafı veya PDF ekleyebilir; ekleri inceleyip soruları çözebilir, özet çıkarabilirsin.
+Kod, HTML sayfa, SVG gibi üretilebilir içerikleri artifacts alanına koy; reply içinde uzun kod bloğu YAZMA.
+Kullanıcı hakkında kalıcı bilgiler (hedefleri, tercihleri, çalışma alışkanlıkları vb.) öğrenirsen memories alanına kısa cümleler hâlinde ekle.
 Cevabını SADECE şu biçimde geçerli JSON olarak ver:
-{"reply":"kullanıcıya gösterilecek Türkçe metin","actions":[...]}
+{"reply":"kullanıcıya gösterilecek Türkçe metin","actions":[...],"followups":["2-3 takip sorusu"],"artifacts":[{"title":"...","language":"html|javascript|python|...","content":"kod"}],"memories":["hatırlanacak kısa bilgi"]}
+followups, artifacts ve memories alanları opsiyoneldir; uygun değilse boş bırak.
 
 ${TOOL_GUIDE}
 
 Güncel uygulama verisi:
-${context}
+${context}${memoryBlock}${projectBlock}${researchBlock}
 
 Kurallar: Tarihleri her zaman YYYY-AA-GG biçiminde yaz. "yarın", "cuma" gibi ifadeleri bugünün tarihine göre hesapla.
 Kullanıcı bir değişiklik istemiyorsa sadece bilgi ver ve actions'ı boş bırak. Emin olmadığında soru sor.`;
@@ -184,6 +217,31 @@ Kullanıcı bir değişiklik istemiyorsa sadece bilgi ver ve actions'ı boş bı
         if (parsed) {
           reply = parsed.reply;
           actions = parsed.actions;
+          const fu = (parsed as unknown as { followups?: unknown }).followups;
+          if (Array.isArray(fu)) {
+            followups = fu.map((v) => String(v)).filter((v) => v.trim()).slice(0, 3);
+          }
+          const art = (parsed as unknown as { artifacts?: unknown }).artifacts;
+          if (Array.isArray(art)) {
+            artifacts = art
+              .map((v) => {
+                const a = v as Record<string, unknown>;
+                return {
+                  title: String(a.title ?? "Artifact").slice(0, 80),
+                  language: String(a.language ?? "text").slice(0, 24),
+                  content: String(a.content ?? ""),
+                };
+              })
+              .filter((a) => a.content.trim().length > 0)
+              .slice(0, 3);
+          }
+          const mem = (parsed as unknown as { memories?: unknown }).memories;
+          if (Array.isArray(mem)) {
+            for (const m of mem.slice(0, 3)) {
+              const text = String(m).trim();
+              if (text.length >= 4) await addMemory(user.id, text);
+            }
+          }
         } else if (modelResult.raw.trim()) {
           reply = modelResult.raw.trim();
         } else {
@@ -242,11 +300,19 @@ Kullanıcı bir değişiklik istemiyorsa sadece bilgi ver ve actions'ı boş bı
       : "";
     const finalReply = `${reply}${actionText}${note}`.trim();
 
-    await saveAssistantMessage(user.id, "assistant", finalReply, results);
+    // Artifact ve takip soruları kalıcı olsun: _meta etiketiyle actions'a göm.
+    const persistedActions: unknown[] = [
+      ...results,
+      ...(followups.length ? [{ type: "_meta_followups", items: followups }] : []),
+      ...(artifacts.length ? [{ type: "_meta_artifacts", items: artifacts }] : []),
+    ];
+    await saveAssistantMessage(user.id, "assistant", finalReply, persistedActions, projectId ?? null);
 
     return Response.json({
       reply: finalReply,
       actions: results,
+      followups,
+      artifacts,
       changed: results.some((r) => r.ok),
       provider: {
         label: activeProvider.label,

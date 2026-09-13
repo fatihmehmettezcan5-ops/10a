@@ -99,6 +99,42 @@ export const messages = pgTable("messages", {
   authorName: text("author_name").notNull().default("Bilinmeyen"),
   body: text("body").notNull(),
   homeworkId: integer("homework_id").references(() => homeworks.id, { onDelete: "set null" }),
+  /** Ekler: [{id,name,mime,size,kind,url}] — /api/files/<id> üzerinden servis edilir. */
+  attachments: jsonb("attachments").$type<unknown[]>().default([]),
+  /** Mention: kullanıcı id listesi (@pingleme). */
+  mentions: jsonb("mentions").$type<unknown[]>().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Sohbete yüklenen dosyalar (base64 gövde DB'de; ücretsiz katman için 6 MB tavan). */
+export const chatFiles = pgTable("chat_files", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  mime: text("mime").notNull().default("application/octet-stream"),
+  size: integer("size").notNull().default(0),
+  data: text("data").notNull(), // base64
+  uploaderId: integer("uploader_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Asistanın kullanıcı başına uzun vadeli hafızası. */
+export const aiMemory = pgTable("ai_memory", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Asistan projeleri: konuşmaları ve notları birlikte gruplar. */
+export const assistantProjects = pgTable("assistant_projects", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  note: text("note").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -141,6 +177,7 @@ export const assistantMessages = pgTable("assistant_messages", {
   role: text("role").notNull(), // user | assistant
   content: text("content").notNull(),
   actions: jsonb("actions").$type<unknown[]>().default([]),
+  projectId: integer("project_id").references(() => assistantProjects.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -150,6 +187,9 @@ export type HomeworkUpdate = typeof homeworkUpdates.$inferSelect;
 export type ClassEvent = typeof events.$inferSelect;
 export type ScheduleSlot = typeof scheduleSlots.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type ChatFile = typeof chatFiles.$inferSelect;
+export type AiMemory = typeof aiMemory.$inferSelect;
+export type AssistantProject = typeof assistantProjects.$inferSelect;
 export type AssistantMessage = typeof assistantMessages.$inferSelect;
 export type MockExam = typeof mockExams.$inferSelect;
 export type Announcement = typeof announcements.$inferSelect;

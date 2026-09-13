@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api, type Me } from "@/lib/client";
-import { VC_OPTIONS } from "@/lib/constants";
 
 type Status = { voiceUrl: string | null; online: number; rooms: { name: string; users: number }[] };
 
@@ -63,10 +62,6 @@ export default function VoicePanel({
 
   async function joinCall(target: string) {
     if (connecting || inRoom === target) return;
-    if (!me.vc) {
-      notify("Önce profilinden VC grubunu seç.");
-      return;
-    }
     setConnecting(true);
     try {
       const { token, url } = await api<{ token: string; url: string }>("/api/voice/token", {
@@ -90,7 +85,7 @@ export default function VoicePanel({
       }
       streamRef.current = stream;
 
-      const ws = new WebSocket(`${url}?token=${token}&name=${encodeURIComponent(me.name)}&vc=${encodeURIComponent(me.vc)}`);
+      const ws = new WebSocket(`${url}?token=${token}&name=${encodeURIComponent(me.name)}&vc=`);
       wsRef.current = ws;
       roomRef.current = target;
 
@@ -250,13 +245,8 @@ export default function VoicePanel({
       <div className="card p-4">
         <h1 className="text-lg font-bold text-white">🎧 VC Odaları</h1>
         <p className="text-xs text-slate-400">
-          Sesli sohbet için VC grubuna göre oda seç. E odaları erkekler, K odaları kızlar içindir.
+          Bir odaya dokun, mikrofona izin ver ve bağlan. E odaları erkekler, K odaları kızlar içindir; isteyen istediği odaya girebilir.
         </p>
-        {!me.vc && (
-          <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-            Profil → VC grubundan bir grup seç (E1-E3 / K1-K3).
-          </div>
-        )}
         {status?.voiceUrl === null && (
           <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
             Ses sunucusu henüz yapılandırılmadı. Netlify ortam değişkenlerine VOICE_SECRET ekleyin.
@@ -273,7 +263,7 @@ export default function VoicePanel({
           return (
             <button
               key={r}
-              disabled={connecting || (!me.vc && !active)}
+              disabled={connecting}
               onClick={() => (active ? leaveCall() : joinCall(r))}
               className={`card p-4 text-left transition ${
                 active

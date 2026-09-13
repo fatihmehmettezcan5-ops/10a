@@ -1,3 +1,5 @@
+import type { ChatAttachment } from "@/lib/attachments";
+
 export type Me = {
   id: number;
   name: string;
@@ -5,6 +7,39 @@ export type Me = {
   role: string;
   color: string;
   vc: string | null;
+};
+
+export type AssistantActionResult = {
+  type: string;
+  ok?: boolean;
+  summary?: string;
+  url?: string;
+  items?: unknown;
+};
+
+export type AssistantArtifact = {
+  title: string;
+  language: string;
+  content: string;
+};
+
+export type DirectoryMember = {
+  id: number;
+  name: string;
+  color: string;
+};
+
+export type AssistantProject = {
+  id: number;
+  name: string;
+  note: string;
+  createdAt: string;
+};
+
+export type AiMemoryItem = {
+  id: number;
+  content: string;
+  createdAt: string;
 };
 
 export type HomeworkItem = {
@@ -63,6 +98,8 @@ export type ChatItem = {
   authorRole: string;
   body: string;
   homeworkId: number | null;
+  attachments: ChatAttachment[];
+  mentions: number[];
   createdAt: string;
 };
 
@@ -70,6 +107,7 @@ export type AssistantItem = {
   id: number;
   role: "user" | "assistant";
   content: string;
+  actions: AssistantActionResult[];
   createdAt: string;
 };
 

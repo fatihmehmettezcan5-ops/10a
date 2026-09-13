@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api, type Me } from "@/lib/client";
-import { PROFILE_COLORS, VC_OPTIONS } from "@/lib/constants";
+import { PROFILE_COLORS } from "@/lib/constants";
 
 export default function ProfileModal({
   me,
@@ -17,7 +17,6 @@ export default function ProfileModal({
 }) {
   const [name, setName] = useState(me.name);
   const [color, setColor] = useState(me.color);
-  const [vc, setVc] = useState<string>(me.vc ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -31,7 +30,7 @@ export default function ProfileModal({
     try {
       const data = await api<{ user: Me }>("/api/profile", {
         method: "PATCH",
-        body: JSON.stringify({ name, color, vc }),
+        body: JSON.stringify({ name, color }),
       });
       onSaved(data.user);
       notify("Profil güncellendi ✨");
@@ -96,40 +95,6 @@ export default function ProfileModal({
               <label className="mb-1 block text-xs font-semibold text-slate-400">Ad Soyad</label>
               <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-400">VC grubu</label>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setVc("")}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
-                  vc === ""
-                    ? "border-indigo-400 bg-indigo-500/20 text-white"
-                    : "border-slate-700 bg-slate-900/60 text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                Yok
-              </button>
-              {VC_OPTIONS.map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setVc(v)}
-                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
-                    vc === v
-                      ? v.startsWith("E")
-                        ? "border-sky-400 bg-sky-500/20 text-white"
-                        : "border-pink-400 bg-pink-500/20 text-white"
-                      : "border-slate-700 bg-slate-900/60 text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1 text-[10px] text-slate-500">E = erkek grubu, K = kız grubu. Emin değilsen boş bırak.</p>
           </div>
 
           <div>

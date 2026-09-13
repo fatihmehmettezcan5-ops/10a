@@ -17,7 +17,7 @@ import {
 } from "@/lib/data";
 import { CLASS_NAME, DAY_NAMES, STATUS_LABELS, todayISO, type HomeworkStatus } from "@/lib/constants";
 
-export type ActionResult = { type: string; ok: boolean; summary: string };
+export type ActionResult = { type: string; ok: boolean; summary: string; url?: string };
 
 export const TOOL_GUIDE = `Kullanabileceğin eylemler (actions dizisi içinde JSON nesneleri):
 - {"type":"create_homework","title":"...","subject":"Matematik","description":"...","dueDate":"YYYY-AA-GG","priority":"low|normal|high"}
@@ -29,6 +29,7 @@ export const TOOL_GUIDE = `Kullanabileceğin eylemler (actions dizisi içinde JS
 - {"type":"delete_event","eventId":3}
 - {"type":"update_schedule","dayOfWeek":1,"period":3,"subject":"Fizik","teacher":"...","room":"..."}  (dayOfWeek 1=Pazartesi ... 5=Cuma, subject boş bırakılırsa o saat silinir)
 - {"type":"send_message","body":"sınıf sohbetine gönderilecek mesaj"}
+- {"type":"generate_image","prompt":"ingilizce, detaylı görsel tarifi"}  → ücretsiz görsel üretimi; kullanıcı görsel/çizim/logo/afiş istediğinde KULLAN
 Kullanıcı bir değişiklik istemiyorsa actions boş dizi olmalı. Asla uydurma id kullanma; listede olmayan bir kayıt için "match" alanını kullan.`;
 
 export async function buildContext(user: SafeUser) {
@@ -202,6 +203,15 @@ export async function executeActions(
         case "send_message": {
           const created = await createMessage(user, String(action.body ?? ""));
           results.push({ type, ok: true, summary: `Sınıf sohbetine gönderildi: “${created.body}”` });
+          break;
+        }
+        case "generate_image": {
+          // Ücretsiz, anahtarsız görsel üretimi (Pollinations). URL istemcide gösterilir.
+          const prompt = String(action.prompt ?? "").trim().slice(0, 400);
+          if (!prompt) throw new Error("Görsel tarifi (prompt) boş olamaz.");
+          const seed = Math.floor(Math.random() * 1_000_000);
+          const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+          results.push({ type, ok: true, url, summary: `🎨 Görsel üretildi: “${prompt}”` });
           break;
         }
         default:

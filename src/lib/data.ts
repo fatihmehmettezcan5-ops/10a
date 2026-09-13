@@ -1,7 +1,10 @@
 import { db } from "@/db";
 import {
-  announcements,
+  aiMemory,
   assistantMessages,
+  assistantProjects,
+  announcements,
+  chatFiles,
   events,
   homeworks,
   homeworkUpdates,
@@ -10,8 +13,9 @@ import {
   scheduleSlots,
   users,
 } from "@/db/schema";
-import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { HttpError } from "@/lib/auth";
+import { kindOf, type ChatAttachment } from "@/lib/attachments";
 import {
   HOMEWORK_STATUSES,
   PRIORITIES,
@@ -416,10 +420,12 @@ export async function listMessages(afterId = 0, limit = 120) {
       id: r.message.id,
       userId: r.message.userId,
       authorName: r.message.authorName,
-      authorColor: r.authorColor ?? "#94a3b8",
-      authorRole: r.authorRole ?? "student",
+      authorColor: r.authorColor ?? (r.message.userId ? "#94a3b8" : "#10b981"),
+      authorRole: r.message.userId ? (r.authorRole ?? "student") : "ai",
       body: r.message.body,
       homeworkId: r.message.homeworkId,
+      attachments: (r.message.attachments ?? []) as ChatAttachment[],
+      mentions: (r.message.mentions ?? []) as number[],
       createdAt: r.message.createdAt.toISOString(),
     }))
     .reverse();
@@ -429,6 +435,8 @@ export async function createMessage(
   user: { id: number; name: string },
   body: string,
   homeworkId?: number | null,
+  attachments: ChatAttachment[] = [],
+  mentions: number[] = [],
 ) {
   const content = body.trim();
   if (!content) throw new HttpError(400, "Boş mesaj gönderemezsin.");
@@ -440,18 +448,144 @@ export async function createMessage(
       authorName: user.name,
       body: content,
       homeworkId: homeworkId ?? null,
+      attachments,
+      mentions,
     })
     .returning();
   return created;
 }
 
+/** AI asistanın sınıf sohbetine yazdığı mesaj (kullanıcıya bağlı değil). */
+export async function createAiMessage(body: string, attachments: ChatAttachment[] = []) {
+  const content = body.trim().slice(0, 1200);
+  if (!content) throw new HttpError(400, "Boş mesaj gönderemezsin.");
+  const [created] = await db
+    .insert(messages)
+    .values({
+      userId: null,
+      authorName: "10A Asistan",
+      body: content,
+      attachments,
+      mentions: [],
+    })
+    .returning();
+  return created;
+}
+
+/* ------------------------------ DOSYALAR ------------------------------ */
+
+export async function saveChatFile(input: {
+  name: string;
+  mime: string;
+  size: number;
+  dataBase64: string;
+  uploaderId: number;
+}): Promise<ChatAttachment> {
+  const id = crypto.randomUUID();
+  await db.insert(chatFiles).values({
+    id,
+    name: input.name.slice(0, 180),
+    mime: input.mime || "application/octet-stream",
+    size: input.size,
+    data: input.dataBase64,
+    uploaderId: input.uploaderId,
+  });
+  return {
+    id,
+    name: input.name.slice(0, 180),
+    mime: input.mime || "application/octet-stream",
+    size: input.size,
+    kind: kindOf(input.mime),
+    url: `/api/files/${id}`,
+  };
+}
+
+export async function getChatFile(id: string) {
+  const [row] = await db.select().from(chatFiles).where(eq(chatFiles.id, id)).limit(1);
+  return row ?? null;
+}
+
+/* ------------------------- ASİSTAN HAFIZASI --------------------------- */
+
+export async function listMemory(userId: number, limit = 40) {
+  const rows = await db
+    .select()
+    .from(aiMemory)
+    .where(eq(aiMemory.userId, userId))
+    .orderBy(desc(aiMemory.id))
+    .limit(limit);
+  return rows.reverse();
+}
+
+export async function addMemory(userId: number, content: string) {
+  const clean = content.trim().slice(0, 300);
+  if (clean.length < 4) return null;
+  const existing = await listMemory(userId, 60);
+  if (existing.some((m) => m.content.toLowerCase() === clean.toLowerCase())) return null;
+  const [created] = await db.insert(aiMemory).values({ userId, content: clean }).returning();
+  // Tavan: kullanıcı başına en fazla 60 kayıt; fazlaysa en eskileri sil.
+  const count = existing.length + 1;
+  if (count > 60 && existing.length) {
+    await db.delete(aiMemory).where(
+      and(eq(aiMemory.userId, userId), lte(aiMemory.id, existing[0].id)),
+    );
+  }
+  return created;
+}
+
+export async function deleteMemory(userId: number, id: number) {
+  await db.delete(aiMemory).where(and(eq(aiMemory.userId, userId), eq(aiMemory.id, id)));
+}
+
+/* ------------------------- ASİSTAN PROJELERİ -------------------------- */
+
+export async function listProjects(userId: number) {
+  return db
+    .select()
+    .from(assistantProjects)
+    .where(eq(assistantProjects.userId, userId))
+    .orderBy(desc(assistantProjects.id));
+}
+
+export async function createProject(userId: number, name: string, note: string) {
+  const clean = name.trim().slice(0, 60);
+  if (!clean) throw new HttpError(400, "Proje adı gerekli.");
+  const [created] = await db
+    .insert(assistantProjects)
+    .values({ userId, name: clean, note: note.trim().slice(0, 500) })
+    .returning();
+  return created;
+}
+
+export async function deleteProject(userId: number, id: number) {
+  await db
+    .delete(assistantProjects)
+    .where(and(eq(assistantProjects.userId, userId), eq(assistantProjects.id, id)));
+}
+
+export async function getProject(userId: number, id: number) {
+  const [row] = await db
+    .select()
+    .from(assistantProjects)
+    .where(and(eq(assistantProjects.userId, userId), eq(assistantProjects.id, id)))
+    .limit(1);
+  return row ?? null;
+}
+
 /* -------------------------------- ASİSTAN --------------------------------- */
 
-export async function listAssistantMessages(userId: number, limit = 40) {
+export async function listAssistantMessages(userId: number, limit = 40, projectId?: number | null) {
+  // projectId === undefined: tümü; 0: Genel (projesiz); >0: o proje
+  const scope =
+    projectId === undefined
+      ? eq(assistantMessages.userId, userId)
+      : projectId === 0
+        ? and(eq(assistantMessages.userId, userId), isNull(assistantMessages.projectId))
+        : and(eq(assistantMessages.userId, userId), eq(assistantMessages.projectId, projectId as number));
   const rows = await db
     .select()
     .from(assistantMessages)
-    .where(eq(assistantMessages.userId, userId))
+    .where(scope)
     .orderBy(desc(assistantMessages.id))
     .limit(limit);
   return rows
@@ -470,12 +604,22 @@ export async function saveAssistantMessage(
   role: "user" | "assistant",
   content: string,
   actions: unknown[] = [],
+  projectId?: number | null,
 ) {
   const [created] = await db
     .insert(assistantMessages)
-    .values({ userId, role, content, actions })
+    .values({ userId, role, content, actions, ...(projectId !== undefined ? { projectId } : {}) })
     .returning();
   return created;
+}
+
+/** @pingleme için hafif üye dizini (tüm kimliği doğrulanmış kullanıcılar açabilir). */
+export async function listDirectory() {
+  const rows = await db
+    .select({ id: users.id, name: users.name, color: users.color })
+    .from(users)
+    .orderBy(users.name);
+  return rows;
 }
 
 /* ------------------------------ DENEMELER --------------------------------- */
