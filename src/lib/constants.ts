@@ -50,6 +50,12 @@ export const EVENT_TYPE_EMOJI: Record<EventType, string> = {
 
 export const DAY_NAMES = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 
+/** Kayıt ve profil sayfasında kullanılan avatar renkleri. */
+export const PROFILE_COLORS = [
+  "#6366f1", "#ec4899", "#14b8a6", "#f59e0b",
+  "#8b5cf6", "#22c55e", "#ef4444", "#0ea5e9",
+] as const;
+
 /**
  * Zil çizelgesi: 08:20 başlangıç, 40 dk ders + 10 dk teneffüs.
  * Öğle arası 12:20-13:10. Cuma günleri öğle arası 13:20'ye uzar ve

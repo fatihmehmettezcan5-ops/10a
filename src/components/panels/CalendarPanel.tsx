@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { api, type EventItem, type HomeworkItem, type Me } from "@/lib/client";
+import { buildIcs } from "@/lib/ics";
 import {
   EVENT_TYPES,
   EVENT_TYPE_EMOJI,
@@ -77,6 +78,18 @@ export default function CalendarPanel({
     setMonth(next.getUTCMonth());
   }
 
+  function exportIcs() {
+    const ics = buildIcs(visible, "10/A Sınıf Takvimi");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "10a-takvim.ics";
+    link.click();
+    URL.revokeObjectURL(url);
+    notify("Takvim .ics olarak indirildi 🗓️");
+  }
+
   async function addEvent(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -124,6 +137,9 @@ export default function CalendarPanel({
       <section className="card p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            <button className="btn btn-ghost px-2 py-1" onClick={exportIcs} title="Google/Apple Takvim için indir (.ics)">
+              ⬇️ .ics
+            </button>
             <button className="btn btn-ghost px-2 py-1" onClick={() => shiftMonth(-1)}>
               ←
             </button>

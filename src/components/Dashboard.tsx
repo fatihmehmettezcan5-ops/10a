@@ -18,6 +18,7 @@ import CalendarPanel from "@/components/panels/CalendarPanel";
 import SchedulePanel from "@/components/panels/SchedulePanel";
 import ChatPanel from "@/components/panels/ChatPanel";
 import AssistantPanel from "@/components/panels/AssistantPanel";
+import ProfileModal from "@/components/ProfileModal";
 
 const TABS = [
   { id: "overview", label: "Genel", icon: "🏠" },
@@ -30,9 +31,11 @@ const TABS = [
 
 export type TabId = (typeof TABS)[number]["id"];
 
-export default function Dashboard({ me }: { me: Me }) {
+export default function Dashboard({ me: initialMe }: { me: Me }) {
   const router = useRouter();
+  const [me, setMe] = useState<Me>(initialMe);
   const [tab, setTab] = useState<TabId>("overview");
+  const [profileOpen, setProfileOpen] = useState(false);
   const [homeworks, setHomeworks] = useState<HomeworkItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [schedule, setSchedule] = useState<SlotItem[]>([]);
@@ -111,20 +114,24 @@ export default function Dashboard({ me }: { me: Me }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-1.5">
+          <button
+            className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 transition hover:border-indigo-500/50"
+            onClick={() => setProfileOpen(true)}
+            title="Profil ayarları"
+          >
             <span
               className="grid h-7 w-7 place-items-center rounded-lg text-xs font-bold text-white"
               style={{ background: me.color }}
             >
               {me.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
             </span>
-            <div className="leading-tight">
+            <div className="text-left leading-tight">
               <div className="text-xs font-semibold text-white">{me.name}</div>
               <div className="text-[10px] text-slate-400">
                 {me.role === "admin" ? "Sınıf başkanı" : "Öğrenci"}
               </div>
             </div>
-          </div>
+          </button>
           <button className="btn btn-ghost" onClick={logout}>
             Çıkış
           </button>
@@ -192,6 +199,15 @@ export default function Dashboard({ me }: { me: Me }) {
         )}
         {tab === "assistant" && <AssistantPanel me={me} onChanged={refreshAll} notify={notify} />}
       </main>
+
+      {profileOpen && (
+        <ProfileModal
+          me={me}
+          onSaved={setMe}
+          onClose={() => setProfileOpen(false)}
+          notify={notify}
+        />
+      )}
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-indigo-400/30 bg-slate-900/95 px-4 py-2 text-sm text-slate-100 shadow-2xl fade-up">

@@ -9,10 +9,11 @@ import {
   setSessionCookie,
   toSafeUser,
 } from "@/lib/auth";
+import { PROFILE_COLORS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-const COLORS = ["#6366f1", "#ec4899", "#14b8a6", "#f59e0b", "#8b5cf6", "#22c55e", "#ef4444", "#0ea5e9"];
+
 
 export async function POST(request: Request) {
   try {
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
           email,
           passwordHash: hashPassword(password),
           role: count === 0 ? "admin" : "student",
-          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          color: PROFILE_COLORS[Math.floor(Math.random() * PROFILE_COLORS.length)],
         })
         .returning();
       return row;

@@ -26,7 +26,7 @@ export default function ChatPanel({
   }, [messages.length]);
 
   useEffect(() => {
-    const timer = window.setInterval(async () => {
+    async function pull() {
       try {
         const lastId = messages.length ? messages[messages.length - 1].id : 0;
         const data = await api<{ messages: ChatItem[] }>(`/api/messages?after=${lastId}`);
@@ -39,8 +39,19 @@ export default function ChatPanel({
       } catch {
         /* sessizce yoksay */
       }
+    }
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void pull();
     }, 4000);
-    return () => window.clearInterval(timer);
+    // Sekmeye geri dönüldüğünde beklemadan senkronize et.
+    const onVisible = () => {
+      if (!document.hidden) void pull();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [messages, setMessages]);
 
   async function send(e: React.FormEvent) {
