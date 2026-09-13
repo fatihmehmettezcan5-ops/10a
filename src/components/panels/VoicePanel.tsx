@@ -41,23 +41,23 @@ export default function VoicePanel({
 
   /** getUserMedia hatasını kullanıcıya anlamlı Türkçe mesaja çevirir. */
   function micErrorMessage(error: unknown): string {
+    const code = (error as { name?: string })?.name ?? "BilinmeyenHata";
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       if (/ wv\)/.test(navigator.userAgent)) {
-        return "Uygulama içi görünüm mikrofon vermiyor. Chrome uygulamasından sitemizi aç.";
+        return `Uygulama içi görünüm mikrofon vermiyor. Chrome uygulamasından sitemizi aç. (${code})`;
       }
-      return "Bu ortam mikrofon erişimini desteklemiyor. Chrome veya Safari ile siteyi aç.";
+      return `Bu ortam mikrofon erişimini desteklemiyor. Chrome veya Safari ile siteyi aç. (${code})`;
     }
-    const name = (error as { name?: string })?.name ?? "";
-    switch (name) {
+    switch (code) {
       case "NotAllowedError":
       case "SecurityError":
-        return "Mikrofon bu site için engellenmiş. Adres çubuğundaki kilit → İzinler → Mikrofon: İzin ver, sonra sayfayı yenile.";
+        return `Mikrofon engellenmiş. 1) Adres çubuğundaki kilit → Mikrofon: İzin ver. 2) Windows: Ayarlar → Gizlilik ve güvenlik → Mikrofon → erişim açık olsun. 3) Sayfayı yenile. (${code})`;
       case "NotFoundError":
-        return "Cihazda mikrofon bulunamadı.";
+        return `Cihazda mikrofon bulunamadı. Başka bir cihazdan dene. (${code})`;
       case "NotReadableError":
-        return "Mikrofon başka bir uygulama tarafından kullanılıyor (ör. arama). Diğer uygulamayı kapatıp tekrar dene.";
+        return `Mikrofon başka bir uygulama tarafından kullanılıyor veya sistem erişimi vermiyor. Arama/Konferans uygulamalarını kapat, Windows mikrofon gizlilik ayarını kontrol et. (${code})`;
       default:
-        return `Mikrofon açılamadı${name ? ` (${name})` : ""}. Tekrar dene.`;
+        return `Mikrofon açılamadı (${code}). Tekrar dene.`;
     }
   }
 
