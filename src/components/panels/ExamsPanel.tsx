@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { api, type ExamItem, type Me, type MockExamGroup } from "@/lib/client";
 import { SECTION_STYLES, SUBJECT_SECTION, formatDateTR, SUBJECTS, todayISO } from "@/lib/constants";
 import QuickTytForm from "@/components/panels/QuickTytForm";
+import QuickAytForm from "@/components/panels/QuickAytForm";
 
 const EXAM_TYPES = ["TYT", "AYT", "Ders"] as const;
 const SECTION_IDS = ["Tümü", "TDE", "SOS", "MAT", "FEN"];
@@ -84,7 +85,7 @@ export default function ExamsPanel({
   const [wrong, setWrong] = useState("");
   const [empty, setEmpty] = useState("");
   const [chartSubject, setChartSubject] = useState<string>("Tümü");
-  const [entryMode, setEntryMode] = useState<"tyt" | "tek">("tyt");
+  const [entryMode, setEntryMode] = useState<"tyt" | "ayt" | "tek">("tyt");
   const [saving, setSaving] = useState(false);
 
   const liveNet =
@@ -278,13 +279,20 @@ export default function ExamsPanel({
       </div>
 
       <div className="card h-fit space-y-3 p-4">
-        <div className="mb-1 grid grid-cols-2 gap-1 rounded-xl bg-slate-900/70 p-1 text-xs font-semibold">
+        <div className="mb-1 grid grid-cols-3 gap-1 rounded-xl bg-slate-900/70 p-1 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setEntryMode("tyt")}
             className={`rounded-lg px-2 py-1.5 transition ${entryMode === "tyt" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
           >
             ⚡ Hızlı TYT
+          </button>
+          <button
+            type="button"
+            onClick={() => setEntryMode("ayt")}
+            className={`rounded-lg px-2 py-1.5 transition ${entryMode === "ayt" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
+          >
+            ⚡ Hızlı AYT
           </button>
           <button
             type="button"
@@ -296,6 +304,8 @@ export default function ExamsPanel({
         </div>
         {entryMode === "tyt" ? (
           <QuickTytForm onSave={reload} notify={notify} />
+        ) : entryMode === "ayt" ? (
+          <QuickAytForm onSave={reload} notify={notify} />
         ) : (
         <form onSubmit={submit} className="space-y-3">
         <h2 className="text-sm font-bold text-white">➕ Tek Ders Ekle</h2>

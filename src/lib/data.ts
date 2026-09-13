@@ -23,6 +23,7 @@ import {
   todayISO,
   bellTimes,
   TYT_SUBJECTS,
+  AYT_SUBJECTS,
   VC_ORDER,
 } from "@/lib/constants";
 
@@ -695,19 +696,22 @@ export async function createMockExamBatch(userId: number, input: Record<string, 
   if (rawRows.length === 0) throw new HttpError(400, "En az bir ders sonucu gir.");
   if (rawRows.length > 12) throw new HttpError(400, "Bir denemede en fazla 12 ders satırı olabilir.");
 
+  const examType = text(input.examType) === "AYT" ? "AYT" : "TYT";
+  const allowedSubjects = (examType === "AYT" ? AYT_SUBJECTS : TYT_SUBJECTS) as readonly string[];
+
   const seen = new Set<string>();
   const values = rawRows.map((r) => {
     const row = r as Record<string, unknown>;
     const subject = text(row.subject);
-    if (!(TYT_SUBJECTS as readonly string[]).includes(subject)) {
-      throw new HttpError(400, `Geçersiz ders: ${subject || "(boş)"}`);
+    if (!allowedSubjects.includes(subject)) {
+      throw new HttpError(400, `Geçersiz ders (${examType}): ${subject || "(boş)"}`);
     }
     if (seen.has(subject)) throw new HttpError(400, `${subject} satırı tekrar ediyor.`);
     seen.add(subject);
     return {
       userId,
       examName,
-      examType: "TYT",
+      examType,
       subject,
       date,
       correct: countField(row.correct, `(${subject}) Doğru`),

@@ -83,6 +83,46 @@ export const TYT_SECTIONS = [
 
 export const TYT_SUBJECTS = TYT_SECTIONS.flatMap((s) => s.subjects.map((x) => x.name));
 
+/** AYT bölüm yapısı (ÖSYM standardı): Matematik ortak; alan dersleri
+ *  yalnızca ilgili altyapıya girenlerce doldurulur — boş satırlar kaydedilmez. */
+export const AYT_SECTIONS = [
+  {
+    id: "MAT",
+    label: "Matematik (ortak)",
+    subjects: [{ name: "Matematik", questions: 40, optional: false }],
+  },
+  {
+    id: "FEN",
+    label: "Sayısal alan (SAY)",
+    subjects: [
+      { name: "Fizik", questions: 14, optional: false },
+      { name: "Kimya", questions: 13, optional: false },
+      { name: "Biyoloji", questions: 12, optional: false },
+    ],
+  },
+  {
+    id: "SÖZ",
+    label: "Sözel ortak (EA & SÖZ & SAY)",
+    subjects: [
+      { name: "Türk Dili ve Edebiyatı", questions: 24, optional: false },
+      { name: "Tarih-1", questions: 10, optional: false },
+      { name: "Coğrafya-1", questions: 6, optional: false },
+    ],
+  },
+  {
+    id: "ALAN",
+    label: "Alan dersleri (EA & SÖZ)",
+    subjects: [
+      { name: "Tarih-2", questions: 11, optional: false },
+      { name: "Coğrafya-2", questions: 11, optional: false },
+      { name: "Felsefe", questions: 12, optional: false },
+      { name: "Din Kültürü", questions: 6, optional: true },
+    ],
+  },
+] as const;
+
+export const AYT_SUBJECTS = AYT_SECTIONS.flatMap((s) => s.subjects.map((x) => x.name));
+
 /** Ders → bölüm eşlemesi (grafik filtreleri ve etiketler için). */
 export const SUBJECT_SECTION: Record<string, string> = {
   "Türkçe": "TDE",
@@ -96,6 +136,11 @@ export const SUBJECT_SECTION: Record<string, string> = {
   "Fizik": "FEN",
   "Kimya": "FEN",
   "Biyoloji": "FEN",
+  // AYT dersleri
+  "Tarih-1": "SOS",
+  "Coğrafya-1": "SOS",
+  "Tarih-2": "SOS",
+  "Coğrafya-2": "SOS",
 };
 
 export const SECTION_STYLES: Record<string, string> = {

@@ -3,7 +3,7 @@ import { createMockExamBatch } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-/** Hızlı TYT girişi: tek istekte tüm ders sonuçları. */
+/** Hızlı TYT/AYT girişi: tek istekte tüm ders sonuçları (examType ile seçilir). */
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
