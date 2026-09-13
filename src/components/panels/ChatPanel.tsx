@@ -15,6 +15,8 @@ import { BUBBLE_IN, BUBBLE_OUT, CHAT_BG_STYLE, dayKey, dayLabel, timeLabel, with
 type StagedFile = { file: File; previewUrl: string | null };
 
 type MenuState = { messageId: number; x: number; y: number } | null;
+const MENU_W = 224;   // w-56
+const MENU_H = 260;   // yaklaşık menü yüksekliği (5 öğe)
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 function ReadInfoList({
@@ -98,6 +100,7 @@ export default function ChatPanel({
   const [busyUpload, setBusyUpload] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [menu, setMenu] = useState<MenuState>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [readInfoId, setReadInfoId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -120,6 +123,19 @@ export default function ChatPanel({
 
   useEffect(() => {
     if (!menu) return;
+    // Menü ekran dışına taşıyorsa gerçek boyutuyla içeri al (alt kenar sorunu)
+    const el = menuRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let { x, y } = menu;
+      if (x + MENU_W + 8 > vw) x = vw - MENU_W - 8;
+      if (x < 8) x = 8;
+      if (y + rect.height + 12 > vh) y = vh - rect.height - 12;
+      if (y < 8) y = 8;
+      if (x !== menu.x || y !== menu.y) setMenu({ ...menu, x, y });
+    }
     const close = () => setMenu(null);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(null);
     window.addEventListener("click", close);
@@ -461,10 +477,11 @@ export default function ChatPanel({
     <div className="card flex h-[76vh] flex-col overflow-hidden p-0">
       {menu && menuMessage && (
         <div
+          ref={menuRef}
           className="fixed z-50 w-56 overflow-hidden rounded-xl bg-[#233138] py-1 shadow-2xl ring-1 ring-white/10"
           style={{
-            left: Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 400) - 240),
-            top: Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 600) - 200),
+            left: Math.max(8, Math.min(menu.x - 8, (typeof window !== "undefined" ? window.innerWidth : 400) - MENU_W - 8)),
+            top: Math.max(8, Math.min(menu.y - 4, (typeof window !== "undefined" ? window.innerHeight : 600) - MENU_H - 12)),
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -608,8 +625,10 @@ export default function ChatPanel({
           const openMenu = (e: React.MouseEvent | React.TouchEvent) => {
             if (message.deletedForAll) return;
             e.preventDefault();
-            const pt = "touches" in e ? e.touches[0] : e;
-            setMenu({ messageId: message.id, x: pt.clientX, y: pt.clientY });
+            const touch = "touches" in e;
+            const pt = touch ? e.touches[0] : e;
+            // Dokunmatikte menü parmağın üstünde kalmamalı: biraz yukarısında aç.
+            setMenu({ messageId: message.id, x: pt.clientX, y: touch ? pt.clientY - 24 : pt.clientY });
           };
 
           const bubbleBg = mine ? BUBBLE_OUT : BUBBLE_IN;
