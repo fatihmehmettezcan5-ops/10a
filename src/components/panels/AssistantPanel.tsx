@@ -4,6 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type AssistantItem, type Me } from "@/lib/client";
 
 type ProviderInfo = { label: string; model: string; id: string };
+type StagedFile = { file: File; previewUrl: string | null };
+
+const MAX_FILES = 2;
+const MAX_FILE_MB = 3.5;
+const MAX_TOTAL_MB = 4;
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 const SUGGESTIONS = [
   "Bugün ne var?",
@@ -27,7 +33,49 @@ export default function AssistantPanel({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [provider, setProvider] = useState<ProviderInfo | null>(null);
+  const [staged, setStaged] = useState<StagedFile[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function addFiles(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    const next = [...staged];
+    let error = "";
+    for (const file of Array.from(list)) {
+      if (next.length >= MAX_FILES) {
+        error = `Bir mesaja en fazla ${MAX_FILES} dosya ekleyebilirsin.`;
+        break;
+      }
+      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+      if (!isImage && file.type !== "application/pdf") {
+        error = `"${file.name}" eklenemedi: sadece fotoğraf (PNG/JPG/WebP) veya PDF.`;
+        continue;
+      }
+      if (file.size > MAX_FILE_MB * 1024 * 1024) {
+        error = `"${file.name}" çok büyük (en fazla ${MAX_FILE_MB} MB).`;
+        continue;
+      }
+      const total = next.reduce((sum, s) => sum + s.file.size, 0) + file.size;
+      if (total > MAX_TOTAL_MB * 1024 * 1024) {
+        error = "Ek dosyaların toplam boyutu 4 MB'yi aşamaz.";
+        continue;
+      }
+      next.push({ file, previewUrl: isImage ? URL.createObjectURL(file) : null });
+    }
+    if (error) notify(error);
+    setStaged(next);
+  }
+
+  function removeStaged(index: number) {
+    const item = staged[index];
+    if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    setStaged(staged.filter((_, i) => i !== index));
+  }
+
+  function clearStaged() {
+    staged.forEach((s) => s.previewUrl && URL.revokeObjectURL(s.previewUrl));
+    setStaged([]);
+  }
 
   const load = useCallback(async () => {
     try {
@@ -49,19 +97,37 @@ export default function AssistantPanel({
 
   async function ask(text: string) {
     const question = text.trim();
-    if (!question || loading) return;
+    if ((!question && staged.length === 0) || loading) return;
     setInput("");
+    const attachmentCount = staged.length;
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), role: "user", content: question, createdAt: new Date().toISOString() },
+      {
+        id: Date.now(),
+        role: "user",
+        content: attachmentCount ? `${question} 📎×${attachmentCount}` : question,
+        createdAt: new Date().toISOString(),
+      },
     ]);
     setLoading(true);
     try {
-      const data = await api<{ reply: string; changed: boolean; provider: ProviderInfo }>("/api/assistant", {
-        method: "POST",
-        body: JSON.stringify({ message: question }),
-      });
+      let data: { reply: string; changed: boolean; provider: ProviderInfo };
+      if (staged.length) {
+        const form = new FormData();
+        form.append("message", question);
+        staged.forEach((s) => form.append("files", s.file));
+        data = await api<{ reply: string; changed: boolean; provider: ProviderInfo }>("/api/assistant", {
+          method: "POST",
+          body: form,
+        });
+      } else {
+        data = await api<{ reply: string; changed: boolean; provider: ProviderInfo }>("/api/assistant", {
+          method: "POST",
+          body: JSON.stringify({ message: question }),
+        });
+      }
       setProvider(data.provider);
+      clearStaged();
       setMessages((prev) => [
         ...prev,
         { id: Date.now() + 1, role: "assistant", content: data.reply, createdAt: new Date().toISOString() },
@@ -133,6 +199,33 @@ export default function AssistantPanel({
           <div ref={bottomRef} />
         </div>
 
+        {staged.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {staged.map((item, index) => (
+              <span
+                key={`${item.file.name}-${index}`}
+                className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/70 px-2 py-1 text-xs text-slate-200"
+              >
+                {item.previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.previewUrl} alt="" className="h-8 w-8 rounded object-cover" />
+                ) : (
+                  <span aria-hidden>📄</span>
+                )}
+                <span className="max-w-36 truncate">{item.file.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeStaged(index)}
+                  className="text-slate-500 transition hover:text-rose-300"
+                  aria-label="Eki kaldır"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -141,13 +234,33 @@ export default function AssistantPanel({
           className="mt-3 flex gap-2 border-t border-slate-800 pt-3"
         >
           <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,application/pdf"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn-ghost px-3"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || staged.length >= MAX_FILES}
+            title="Fotoğraf veya PDF ekle"
+          >
+            📎
+          </button>
+          <input
             className="input flex-1"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Asistana sor ya da komut ver..."
+            placeholder="Asistana sor ya da komut ver... (📎 ile fotoğraf/PDF)"
             disabled={loading}
           />
-          <button className="btn btn-primary" disabled={loading || !input.trim()}>
+          <button className="btn btn-primary" disabled={loading || (!input.trim() && staged.length === 0)}>
             Gönder
           </button>
         </form>
