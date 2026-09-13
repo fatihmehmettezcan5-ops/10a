@@ -1,5 +1,7 @@
 [build]
-  command = "npx drizzle-kit push --force && npm run build"
+  # Not: Şema değişiklikleri deploy sırasında otomatik uygulanmaz.
+  # Yeni tablo/kolon eklediğinde: npx drizzle-kit push --force (DATABASE_URL ile)
+  command = "npm run build"
   publish = ".next"
 
 [build.environment]
