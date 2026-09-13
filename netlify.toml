@@ -12,5 +12,16 @@
 [functions]
   node_bundler = "esbuild"
 
+# Güvenlik başlıkları (netlify.toml'daki headers en yüksek önceliklidir).
+# microphone/camera (self): VC Odaları mikrofonu ilk taraf olarak kullanır —
+# () yapmayın! () tüm sitede mikrofonu header seviyesinde kapatır.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=()"
+
 # Next.js App Router, SSR, API route'ları ve görsel optimizasyonu
 # Netlify'ın güncel OpenNext adaptörü tarafından otomatik yapılandırılır.

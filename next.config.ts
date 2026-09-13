@@ -4,7 +4,9 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // microphone/camera (self): VC Odaları mikrofonu ilk taraf olarak kullanır —
+  // () yapmayın! () tüm sitede mikrofonu header seviyesinde kapatır.
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
 ];
 
 const nextConfig: NextConfig = {
