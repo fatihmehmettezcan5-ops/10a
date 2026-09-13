@@ -100,3 +100,29 @@ select.input option {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Mobil uygulama hissi: tarayıcı/el hareketi etkilerini kapat */
+html {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Yeni mesaj balonu: WhatsApp gibi alttan yumuşak giriş */
+@keyframes msgIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.msg-in {
+  animation: msgIn 0.18s ease-out;
+}

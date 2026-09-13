@@ -101,6 +101,10 @@ export default function ChatPanel({
   const [readInfoId, setReadInfoId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [replyTo, setReplyTo] = useState<ChatItem | null>(null);
+  const [swipe, setSwipe] = useState<{ id: number; dx: number } | null>(null);
+  const [highlightId, setHighlightId] = useState<number | null>(null);
+  const touchOrigin = useRef<{ id: number; x: number; y: number; horizontal: boolean } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -238,6 +242,56 @@ export default function ChatPanel({
     inputRef.current?.focus();
   }
 
+  /* --------------------------- CEVAP (REPLY) ------------------------- */
+
+  function jumpToMessage(id: number) {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) {
+      notify("Alıntılanan mesaj görünürde değil (eski mesajlar yüklenmemiş olabilir).");
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(id);
+    window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1400);
+  }
+
+  function onTouchStartFactory(id: number) {
+    return (e: React.TouchEvent) => {
+      const t = e.touches[0];
+      touchOrigin.current = { id, x: t.clientX, y: t.clientY, horizontal: false };
+    };
+  }
+
+  function onTouchMoveFactory(id: number) {
+    return (e: React.TouchEvent) => {
+      const origin = touchOrigin.current;
+      if (!origin || origin.id !== id) return;
+      const t = e.touches[0];
+      const dx = t.clientX - origin.x;
+      const dy = t.clientY - origin.y;
+      if (!origin.horizontal) {
+        // Yatay niyet: dikey kaydırmadan belirgin biçimde ayrışınca yakala.
+        if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.6) origin.horizontal = true;
+        else return;
+      }
+      e.preventDefault?.();
+      if (dx > 0 && dx <= 96) setSwipe({ id, dx });
+    };
+  }
+
+  function onTouchEndFactory(id: number) {
+    return () => {
+      const origin = touchOrigin.current;
+      touchOrigin.current = null;
+      if (origin?.id !== id) return;
+      if (swipe && swipe.id === id && swipe.dx > 52) {
+        const target = messages.find((m) => m.id === id);
+        if (target && !target.deletedForAll) setReplyTo(target);
+      }
+      setSwipe(null);
+    };
+  }
+
   /* ------------------------- MESAJ AKSİYONLARI ---------------------- */
 
   const menuMessage = menu ? messages.find((m) => m.id === menu.messageId) ?? null : null;
@@ -318,11 +372,13 @@ export default function ChatPanel({
           homeworkId: match ? Number(match[1]) : null,
           attachments,
           mentions: mentionIds,
+          replyTo: replyTo?.id ?? null,
         }),
       });
       setDraft("");
       setMentionIds([]);
       setMentionQuery(null);
+      setReplyTo(null);
       clearStaged();
       stickToBottom.current = true;
       const data = await api<{ messages: ChatItem[] }>("/api/messages?reads=1");
@@ -415,6 +471,17 @@ export default function ChatPanel({
           {menuMessage.userId === me.id && me.role !== "admin" && (
             <p className="px-3 py-1.5 text-[10px] text-slate-500">Sohbetteki son 15 dk içinde düzenleyebilirsin</p>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              setReplyTo(menuMessage);
+              setMenu(null);
+              inputRef.current?.focus();
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+          >
+            ↩ Cevap ver
+          </button>
           {canEdit(menuMessage) && (
             <button
               type="button"
@@ -555,10 +622,17 @@ export default function ChatPanel({
               ? "rounded-lg"
               : "rounded-lg rounded-tl-none";
 
+          const swiping = swipe?.id === message.id;
+          const highlight = highlightId === message.id;
+
           return (
-            <div key={message.id}>
+            <div key={message.id} id={`msg-${message.id}`}>
               {newDay && <DaySeparator iso={message.createdAt} />}
-              <div className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "mt-0.5" : "mt-2"}`}>
+              <div
+                className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "mt-0.5" : "mt-2"} rounded-xl transition ${
+                  highlight ? "bg-white/10 ring-1 ring-emerald-400/60" : ""
+                }`}
+              >
                 {!mine && (
                   <span
                     className="grid h-8 w-8 shrink-0 place-items-end text-center text-xs font-bold text-white"
@@ -590,17 +664,14 @@ export default function ChatPanel({
                   )}
                   <div
                     onContextMenu={(e) => openMenu(e)}
-                    onTouchStart={(e) => {
-                      const target = e.currentTarget;
-                      const timer = window.setTimeout(() => openMenu(e), 500);
-                      const cancel = () => window.clearTimeout(timer);
-                      target.addEventListener("touchmove", cancel, { once: true });
-                      target.addEventListener("touchend", cancel, { once: true });
-                    }}
-                    className={`relative whitespace-pre-wrap break-words px-2.5 py-1.5 text-[13.5px] leading-relaxed shadow-sm transition active:scale-[0.99] ${bubbleBg} ${bubbleText} ${radius} ${
+                    onTouchStart={onTouchStartFactory(message.id)}
+                    onTouchMove={onTouchMoveFactory(message.id)}
+                    onTouchEnd={onTouchEndFactory(message.id)}
+                    style={swiping ? { transform: `translateX(${swipe.dx}px)`, transition: "none" } : undefined}
+                    className={`msg-in relative whitespace-pre-wrap break-words px-2.5 py-1.5 text-[13.5px] leading-relaxed shadow-sm transition-transform [transition-property:transform,background-color] active:scale-[0.99] ${bubbleBg} ${bubbleText} ${radius} ${
                       message.deletedForAll ? "italic opacity-60" : "cursor-pointer select-none"
                     }`}
-                    title="Uzun bas ya da sağ tıkla"
+                    title="Uzun bas ya da sağ tıkla · sağa kaydırarak cevapla"
                   >
                     {message.deletedForAll ? (
                       <span className="flex items-center gap-1.5 text-[13px] text-slate-400">
@@ -624,6 +695,26 @@ export default function ChatPanel({
                       </div>
                     ) : (
                     <>
+                    {message.replyTo && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          jumpToMessage(message.replyTo!.id);
+                        }}
+                        className="mb-1 flex w-full items-stretch gap-1.5 rounded-lg bg-black/25 text-left transition hover:bg-black/35"
+                      >
+                        <span className="w-1 shrink-0 rounded-full bg-emerald-400/80" />
+                        <span className="min-w-0 py-1 pr-2">
+                          <span className="block text-[11px] font-bold leading-tight text-emerald-300">
+                            {message.replyTo.deletedForAll ? "Mesaj silindi" : message.replyTo.authorName || "…"}
+                          </span>
+                          <span className="block truncate text-[11.5px] leading-snug text-slate-300">
+                            {message.replyTo.deletedForAll ? "🚫 Bu mesaj silindi" : message.replyTo.body || "…"}
+                          </span>
+                        </span>
+                      </button>
+                    )}
                     {!mine && !grouped && (
                       <div className="mb-0.5 flex items-center gap-1.5 text-[12.5px] font-bold leading-tight">
                         <span style={{ color: isAi ? "#00a884" : message.authorColor }}>
@@ -684,6 +775,27 @@ export default function ChatPanel({
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* --------- Cevap şeridi --------- */}
+      {replyTo && (
+        <div className="flex items-center gap-2 border-t border-[#0d1e26] bg-[#111b21] px-3 py-2">
+          <span aria-hidden className="text-emerald-400">↩</span>
+          <span className="min-w-0 flex-1 rounded-lg bg-[#233138] px-2.5 py-1.5">
+            <span className="block text-[11px] font-bold leading-tight text-emerald-300">
+              {replyTo.userId === me.id ? "Sen" : replyTo.authorName}
+            </span>
+            <span className="block truncate text-[11.5px] text-slate-300">{replyTo.body}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setReplyTo(null)}
+            className="grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-white/5 hover:text-white"
+            aria-label="Cevabı iptal et"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* --------- Ek şeridi --------- */}
       {staged.length > 0 && (

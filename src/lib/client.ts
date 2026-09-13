@@ -102,6 +102,7 @@ export type ChatItem = {
   mentions: number[];
   deletedForAll: boolean;
   edited: boolean;
+  replyTo: { id: number; authorName: string; body: string; deletedForAll: boolean } | null;
   reads: { userId: number; name: string; readAt: string }[];
   createdAt: string;
 };

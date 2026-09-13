@@ -37,6 +37,7 @@ const STATEMENTS = [
   `ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_for_all boolean NOT NULL DEFAULT false`,
   `ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_for jsonb DEFAULT '[]'::jsonb`,
   `ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_id integer`,
   `CREATE TABLE IF NOT EXISTS message_reads (
      id serial PRIMARY KEY,
      message_id integer NOT NULL REFERENCES messages(id) ON DELETE CASCADE,

@@ -109,6 +109,8 @@ export const messages = pgTable("messages", {
   deletedFor: jsonb("deleted_for").$type<unknown[]>().default([]),
   /** Düzenlendi mi (saati değişmez, üstte "düzenlendi" yazar). */
   edited: boolean("edited").notNull().default(false),
+  /** Cevap verilen mesaj (WhatsApp alıntı). */
+  replyToId: integer("reply_to_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

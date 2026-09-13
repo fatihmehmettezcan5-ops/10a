@@ -1,5 +1,5 @@
 import { jsonError, requireUser, HttpError, type SafeUser } from "@/lib/auth";
-import { createAiMessage, createMessage, getChatFile, listMessages } from "@/lib/data";
+import { createAiMessage, createMessage, getChatFile, getChatMessage, listMessages } from "@/lib/data";
 import { buildContext, executeActions, type ActionResult } from "@/lib/ai/tools";
 import { detectProvider, extractJson, runModel, type ChatTurn } from "@/lib/ai/provider";
 import { createAiAttachmentFromUrl } from "@/lib/ai/chat-utils";
@@ -148,8 +148,14 @@ export async function POST(request: Request) {
 
     const attachments = await resolveAttachments(payload.attachments, user.id);
     const mentions = cleanMentions(payload.mentions);
+    const replyToRaw = Number(payload.replyTo);
+    const replyToId = Number.isInteger(replyToRaw) && replyToRaw > 0 ? replyToRaw : null;
+    if (replyToId) {
+      const target = await getChatMessage(replyToId);
+      if (!target) throw new HttpError(400, "Cevap verilecek mesaj bulunamadı.");
+    }
 
-    const created = await createMessage(user, body, Number.isInteger(homeworkId) && homeworkId > 0 ? homeworkId : null, attachments, mentions);
+    const created = await createMessage(user, body, Number.isInteger(homeworkId) && homeworkId > 0 ? homeworkId : null, attachments, mentions, replyToId);
 
     // @10Asistan çağrısı: model varsa sohbete cevap yazar.
     const aiTriggered = body.toLowerCase().includes(AI_MENTION);
@@ -166,6 +172,7 @@ export async function POST(request: Request) {
           mentions,
           deletedForAll: false,
           edited: false,
+          replyTo: replyToId ? { id: replyToId, authorName: "", body: "", deletedForAll: false } : null,
           reads: [],
           createdAt: created.createdAt.toISOString(),
         },

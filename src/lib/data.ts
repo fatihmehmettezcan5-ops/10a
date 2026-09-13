@@ -420,6 +420,7 @@ export type ChatMessageRow = {
   mentions: number[];
   deletedForAll: boolean;
   edited: boolean;
+  replyTo: { id: number; authorName: string; body: string; deletedForAll: boolean } | null;
   reads: { userId: number; name: string; readAt: string }[];
   createdAt: string;
 };
@@ -463,6 +464,21 @@ export async function listMessages(
     readsByMessage.set(r.messageId, list);
   }
 
+  // Cevap verilen mesajlar (pencere dışındakiler dahil) tek sorguda çekilir.
+  const replyIds = Array.from(
+    new Set(visible.map((r) => r.message.replyToId).filter((v): v is number => typeof v === "number" && v > 0)),
+  );
+  const replyMap = new Map<number, { id: number; authorName: string; body: string; deletedForAll: boolean }>();
+  if (replyIds.length) {
+    const replyRows = await db
+      .select({ id: messages.id, authorName: messages.authorName, body: messages.body, deletedForAll: messages.deletedForAll })
+      .from(messages)
+      .where(inArray(messages.id, replyIds));
+    for (const r of replyRows) {
+      replyMap.set(r.id, { id: r.id, authorName: r.authorName, body: r.body.slice(0, 220), deletedForAll: r.deletedForAll });
+    }
+  }
+
   return visible
     .map((r) => ({
       id: r.message.id,
@@ -476,6 +492,7 @@ export async function listMessages(
       mentions: (r.message.mentions ?? []) as number[],
       deletedForAll: r.message.deletedForAll,
       edited: r.message.edited,
+      replyTo: r.message.replyToId ? replyMap.get(r.message.replyToId) ?? null : null,
       reads: readsByMessage.get(r.message.id) ?? [],
       createdAt: r.message.createdAt.toISOString(),
     }))
@@ -536,6 +553,7 @@ export async function createMessage(
   homeworkId?: number | null,
   attachments: ChatAttachment[] = [],
   mentions: number[] = [],
+  replyToId?: number | null,
 ) {
   const content = body.trim();
   if (!content) throw new HttpError(400, "Boş mesaj gönderemezsin.");
@@ -549,6 +567,7 @@ export async function createMessage(
       homeworkId: homeworkId ?? null,
       attachments,
       mentions,
+      ...(replyToId ? { replyToId } : {}),
     })
     .returning();
   return created;
@@ -597,6 +616,11 @@ export async function saveChatFile(input: {
     kind: kindOf(input.mime),
     url: `/api/files/${id}`,
   };
+}
+
+export async function getChatMessage(id: number) {
+  const [row] = await db.select({ id: messages.id }).from(messages).where(eq(messages.id, id)).limit(1);
+  return row ?? null;
 }
 
 export async function getChatFile(id: string) {
