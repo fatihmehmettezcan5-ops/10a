@@ -48,6 +48,63 @@ export const EVENT_TYPE_EMOJI: Record<EventType, string> = {
   deadline: "⏰",
 };
 
+/** TYT denemesi bölümleri ve soru sayıları (yaklaşık; Felsefe opsiyoneldir). */
+export const TYT_SECTIONS = [
+  {
+    id: "TDE",
+    label: "Türkçe (TDE)",
+    subjects: [{ name: "Türkçe", questions: 40, optional: false }],
+  },
+  {
+    id: "SOS",
+    label: "Sosyal (SOS)",
+    subjects: [
+      { name: "Tarih", questions: 5, optional: false },
+      { name: "Coğrafya", questions: 5, optional: false },
+      { name: "Din Kültürü", questions: 5, optional: false },
+      { name: "Felsefe", questions: 5, optional: true },
+    ],
+  },
+  {
+    id: "MAT",
+    label: "Matematik (MAT)",
+    subjects: [{ name: "Matematik", questions: 40, optional: false }],
+  },
+  {
+    id: "FEN",
+    label: "Fen (FEN)",
+    subjects: [
+      { name: "Fizik", questions: 7, optional: false },
+      { name: "Kimya", questions: 7, optional: false },
+      { name: "Biyoloji", questions: 6, optional: false },
+    ],
+  },
+] as const;
+
+export const TYT_SUBJECTS = TYT_SECTIONS.flatMap((s) => s.subjects.map((x) => x.name));
+
+/** Ders → bölüm eşlemesi (grafik filtreleri ve etiketler için). */
+export const SUBJECT_SECTION: Record<string, string> = {
+  "Türkçe": "TDE",
+  "Türk Dili ve Edebiyatı": "TDE",
+  "Tarih": "SOS",
+  "Coğrafya": "SOS",
+  "Din Kültürü": "SOS",
+  "Felsefe": "SOS",
+  "Matematik": "MAT",
+  "Geometri": "MAT",
+  "Fizik": "FEN",
+  "Kimya": "FEN",
+  "Biyoloji": "FEN",
+};
+
+export const SECTION_STYLES: Record<string, string> = {
+  TDE: "bg-indigo-500/15 text-indigo-300",
+  SOS: "bg-amber-500/15 text-amber-300",
+  MAT: "bg-sky-500/15 text-sky-300",
+  FEN: "bg-emerald-500/15 text-emerald-300",
+};
+
 export const DAY_NAMES = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 
 /** Kayıt ve profil sayfasında kullanılan avatar renkleri. */

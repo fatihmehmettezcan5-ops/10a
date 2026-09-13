@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { api, type ExamItem, type Me } from "@/lib/client";
-import { formatDateTR, SUBJECTS, todayISO } from "@/lib/constants";
+import { SECTION_STYLES, SUBJECT_SECTION, formatDateTR, SUBJECTS, todayISO } from "@/lib/constants";
+import QuickTytForm from "@/components/panels/QuickTytForm";
 
 const EXAM_TYPES = ["TYT", "AYT", "Ders"] as const;
+const SECTION_IDS = ["Tümü", "TDE", "SOS", "MAT", "FEN"];
 
 /** Net serisini çizgi grafiğe çeviren bağımlılıksız SVG bileşeni. */
 function NetChart({ points }: { points: { label: string; net: number }[] }) {
@@ -78,18 +80,29 @@ export default function ExamsPanel({
   const [wrong, setWrong] = useState("");
   const [empty, setEmpty] = useState("");
   const [chartSubject, setChartSubject] = useState<string>("Tümü");
+  const [entryMode, setEntryMode] = useState<"tyt" | "tek">("tyt");
   const [saving, setSaving] = useState(false);
 
   const liveNet =
     Math.round((Number(correct || 0) - Number(wrong || 0) / 4) * 100) / 100;
 
-  const subjects = useMemo(
-    () => ["Tümü", ...Array.from(new Set(exams.map((e) => e.subject))).sort((a, b) => a.localeCompare(b, "tr"))],
-    [exams],
-  );
+  const subjects = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of exams) {
+      const sec = SUBJECT_SECTION[e.subject];
+      if (sec) set.add(sec);
+      set.add(e.subject);
+    }
+    return ["Tümü", "TDE", "SOS", "MAT", "FEN", ...Array.from(set).filter((x) => !["Tümü", "TDE", "SOS", "MAT", "FEN"].includes(x)).sort((a, b) => a.localeCompare(b, "tr"))];
+  }, [exams]);
 
   const chartPoints = useMemo(() => {
-    const pool = chartSubject === "Tümü" ? exams : exams.filter((e) => e.subject === chartSubject);
+    const pool =
+      chartSubject === "Tümü"
+        ? exams
+        : SECTION_IDS.includes(chartSubject)
+          ? exams.filter((e) => SUBJECT_SECTION[e.subject] === chartSubject)
+          : exams.filter((e) => e.subject === chartSubject);
     const byDate = new Map<string, number>();
     for (const e of pool) byDate.set(e.date, (byDate.get(e.date) ?? 0) + e.net);
     return Array.from(byDate.entries())
@@ -99,7 +112,12 @@ export default function ExamsPanel({
   }, [exams, chartSubject]);
 
   const summary = useMemo(() => {
-    const pool = chartSubject === "Tümü" ? exams : exams.filter((e) => e.subject === chartSubject);
+    const pool =
+      chartSubject === "Tümü"
+        ? exams
+        : SECTION_IDS.includes(chartSubject)
+          ? exams.filter((e) => SUBJECT_SECTION[e.subject] === chartSubject)
+          : exams.filter((e) => e.subject === chartSubject);
     if (pool.length === 0) return null;
     const nets = pool.map((e) => e.net);
     return {
@@ -213,7 +231,14 @@ export default function ExamsPanel({
                     <td className="px-2 py-1.5 font-semibold text-slate-100">
                       {e.examName} <span className="text-[10px] text-slate-500">· {e.examType}</span>
                     </td>
-                    <td className="px-2 py-1.5 text-slate-300">{e.subject}</td>
+                    <td className="px-2 py-1.5 text-slate-300">
+                      <span
+                        className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${SECTION_STYLES[SUBJECT_SECTION[e.subject] ?? ""] ?? "bg-slate-700/40 text-slate-400"}`}
+                      >
+                        {SUBJECT_SECTION[e.subject] ?? "—"}
+                      </span>
+                      {e.subject}
+                    </td>
                     <td className="px-2 py-1.5 text-center text-emerald-300">{e.correct}</td>
                     <td className="px-2 py-1.5 text-center text-rose-300">{e.wrong}</td>
                     <td className="px-2 py-1.5 text-center text-slate-400">{e.empty}</td>
@@ -235,8 +260,28 @@ export default function ExamsPanel({
         </div>
       </div>
 
-      <form onSubmit={submit} className="card h-fit space-y-3 p-4">
-        <h2 className="text-sm font-bold text-white">➕ Deneme Ekle</h2>
+      <div className="card h-fit space-y-3 p-4">
+        <div className="mb-1 grid grid-cols-2 gap-1 rounded-xl bg-slate-900/70 p-1 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setEntryMode("tyt")}
+            className={`rounded-lg px-2 py-1.5 transition ${entryMode === "tyt" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
+          >
+            ⚡ Hızlı TYT
+          </button>
+          <button
+            type="button"
+            onClick={() => setEntryMode("tek")}
+            className={`rounded-lg px-2 py-1.5 transition ${entryMode === "tek" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
+          >
+            Tek ders
+          </button>
+        </div>
+        {entryMode === "tyt" ? (
+          <QuickTytForm onSave={reload} notify={notify} />
+        ) : (
+        <form onSubmit={submit} className="space-y-3">
+        <h2 className="text-sm font-bold text-white">➕ Tek Ders Ekle</h2>
         <div>
           <label className="mb-1 block text-xs font-semibold text-slate-400">Deneme adı</label>
           <input
@@ -326,7 +371,9 @@ export default function ExamsPanel({
         <p className="text-center text-[10px] text-slate-500">
           Sonuçlar yalnızca sana görünür; sınıf başkanı gerektiğinde silebilir.
         </p>
-      </form>
+        </form>
+        )}
+      </div>
     </div>
   );
 }

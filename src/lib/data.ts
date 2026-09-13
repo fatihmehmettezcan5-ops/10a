@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { HttpError } from "@/lib/auth";
-import { HOMEWORK_STATUSES, PRIORITIES, EVENT_TYPES, todayISO, bellTimes } from "@/lib/constants";
+import { HOMEWORK_STATUSES, PRIORITIES, EVENT_TYPES, todayISO, bellTimes, TYT_SUBJECTS } from "@/lib/constants";
 
 export type HomeworkWithMeta = {
   id: number;
@@ -530,6 +530,43 @@ export async function createMockExam(userId: number, input: Record<string, unkno
     .values({ userId, examName, examType, subject, date, correct, wrong, empty })
     .returning();
   return { ...created, net: Math.round((created.correct - created.wrong / 4) * 100) / 100 };
+}
+
+/** Hızlı TYT girişi: tek istekte birden çok ders sonucu (aynı deneme adı + tarih). */
+export async function createMockExamBatch(userId: number, input: Record<string, unknown>) {
+  const examName = text(input.examName);
+  if (examName.length < 2) throw new HttpError(400, "Deneme adı en az 2 karakter olmalı.");
+  const date = normalizeDate(input.date);
+  if (!date) throw new HttpError(400, "Geçerli bir tarih seç (YYYY-AA-GG).");
+
+  const rawRows = Array.isArray(input.rows) ? input.rows : [];
+  if (rawRows.length === 0) throw new HttpError(400, "En az bir ders sonucu gir.");
+  if (rawRows.length > 12) throw new HttpError(400, "Bir denemede en fazla 12 ders satırı olabilir.");
+
+  const seen = new Set<string>();
+  const values = rawRows.map((r) => {
+    const row = r as Record<string, unknown>;
+    const subject = text(row.subject);
+    if (!(TYT_SUBJECTS as readonly string[]).includes(subject)) {
+      throw new HttpError(400, `Geçersiz ders: ${subject || "(boş)"}`);
+    }
+    if (seen.has(subject)) throw new HttpError(400, `${subject} satırı tekrar ediyor.`);
+    seen.add(subject);
+    return {
+      userId,
+      examName,
+      examType: "TYT",
+      subject,
+      date,
+      correct: countField(row.correct, `(${subject}) Doğru`),
+      wrong: countField(row.wrong, `(${subject}) Yanlış`),
+      empty: countField(row.empty, `(${subject}) Boş`),
+    };
+  });
+
+  const created = await db.insert(mockExams).values(values).returning();
+  const totalNet = Math.round(created.reduce((sum, r) => sum + (r.correct - r.wrong / 4), 0) * 100) / 100;
+  return { count: created.length, totalNet };
 }
 
 export async function deleteMockExam(id: number, userId: number, role: string) {
