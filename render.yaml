@@ -1,0 +1,13 @@
+services:
+  # 10/A Panel — Sesli Oda Sinyal Sunucusu (WebRTC WebSocket)
+  # Render Dashboard → New + → Blueprint → bu repo'yu seç → uygula.
+  - type: web
+    name: 10a-voice
+    runtime: node
+    plan: free
+    rootDir: voice-server
+    buildCommand: "true"
+    startCommand: node voice-server.js
+    healthCheckPath: /health
+    region: frankfurt
+    autoDeploy: false
