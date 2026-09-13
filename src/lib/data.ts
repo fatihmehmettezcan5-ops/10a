@@ -12,7 +12,15 @@ import {
 } from "@/db/schema";
 import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { HttpError } from "@/lib/auth";
-import { HOMEWORK_STATUSES, PRIORITIES, EVENT_TYPES, todayISO, bellTimes, TYT_SUBJECTS } from "@/lib/constants";
+import {
+  HOMEWORK_STATUSES,
+  PRIORITIES,
+  EVENT_TYPES,
+  todayISO,
+  bellTimes,
+  TYT_SUBJECTS,
+  VC_ORDER,
+} from "@/lib/constants";
 
 export type HomeworkWithMeta = {
   id: number;
@@ -684,11 +692,18 @@ export async function listMembers() {
       email: users.email,
       role: users.role,
       color: users.color,
+      vc: users.vc,
       createdAt: users.createdAt,
     })
     .from(users)
     .orderBy(asc(users.id));
-  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+  return rows
+    .map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))
+    .sort(
+      (a, b) =>
+        (VC_ORDER[a.vc ?? ""] ?? 99) - (VC_ORDER[b.vc ?? ""] ?? 99) ||
+        a.name.localeCompare(b.name, "tr"),
+    );
 }
 
 /* -------------------------------- ÖZETLER --------------------------------- */

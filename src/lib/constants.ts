@@ -107,6 +107,14 @@ export const SECTION_STYLES: Record<string, string> = {
 
 export const DAY_NAMES = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 
+/** VC grupları: erkekler E1-E3, kızlar K1-K3. */
+export const VC_OPTIONS = ["E1", "E2", "E3", "K1", "K2", "K3"] as const;
+
+/** Üye listesinde VC sıralaması (VC'sizler en sonda). */
+export const VC_ORDER: Record<string, number> = {
+  E1: 1, E2: 2, E3: 3, K1: 4, K2: 5, K3: 6,
+};
+
 /** Kayıt ve profil sayfasında kullanılan avatar renkleri. */
 export const PROFILE_COLORS = [
   "#6366f1", "#ec4899", "#14b8a6", "#f59e0b",

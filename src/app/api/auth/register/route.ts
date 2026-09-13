@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { ensureSchema } from "@/db/ensure";
 import {
   HttpError,
   hashPassword,
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await ensureSchema();
     const ip = request.headers.get("x-forwarded-for") ?? "local";
     rateLimit(`register:${ip}`, 10, 60_000);
 

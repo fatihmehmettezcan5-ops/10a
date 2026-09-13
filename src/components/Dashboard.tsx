@@ -80,6 +80,11 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
     setExamGroups(data.groups);
   }, []);
 
+  const loadMembers = useCallback(async () => {
+    const data = await api<{ members: MemberItem[] }>("/api/members");
+    setMembers(data.members);
+  }, []);
+
   const loadAnnouncements = useCallback(async () => {
     const data = await api<{ announcements: AnnouncementItem[] }>("/api/announcements");
     setAnnouncements(data.announcements);
@@ -104,11 +109,11 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
       loadStats(),
       loadExams(),
       loadAnnouncements(),
-      ...(me.role === "admin" ? [api<{ members: MemberItem[] }>("/api/members").then((d) => setMembers(d.members))] : []),
+      ...(me.role === "admin" ? [loadMembers()] : []),
     ]).catch(
       (error: unknown) => notify(error instanceof Error ? error.message : "Veri yüklenemedi."),
     );
-  }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, loadExams, loadAnnouncements, me.role, notify]);
+  }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, loadExams, loadAnnouncements, loadMembers, me.role, notify]);
 
   useEffect(() => {
     // İlk veri yüklemesi effect içinde yapılıyor; setState burada senkron çağrılmıyor
@@ -156,7 +161,18 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
               {me.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
             </span>
             <div className="text-left leading-tight">
-              <div className="text-xs font-semibold text-white">{me.name}</div>
+              <div className="text-xs font-semibold text-white">
+                {me.name}
+                {me.vc && (
+                  <span
+                    className={`ml-1 rounded px-1 py-0.5 text-[9px] font-bold ${
+                      me.vc.startsWith("E") ? "bg-sky-500/25 text-sky-300" : "bg-pink-500/25 text-pink-300"
+                    }`}
+                  >
+                    {me.vc}
+                  </span>
+                )}
+              </div>
               <div className="text-[10px] text-slate-400">
                 {me.role === "admin" ? "Sınıf başkanı" : "Öğrenci"}
               </div>
@@ -192,6 +208,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
             announcements={announcements}
             members={members}
             reloadAnnouncements={loadAnnouncements}
+            reloadMembers={loadMembers}
             notify={notify}
             onGo={setTab}
           />

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { db } from "@/db";
+import { ensureSchema } from "@/db/ensure";
 import { users, type User } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -78,7 +79,7 @@ export async function clearSessionCookie() {
   store.set(COOKIE_NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 
-export type SafeUser = Pick<User, "id" | "name" | "email" | "role" | "color">;
+export type SafeUser = Pick<User, "id" | "name" | "email" | "role" | "color" | "vc">;
 
 export function toSafeUser(user: User): SafeUser {
   return {
@@ -87,10 +88,12 @@ export function toSafeUser(user: User): SafeUser {
     email: user.email,
     role: user.role,
     color: user.color,
+    vc: user.vc,
   };
 }
 
 export async function getCurrentUser(): Promise<SafeUser | null> {
+  await ensureSchema();
   const store = await cookies();
   const payload = readSessionToken(store.get(COOKIE_NAME)?.value);
   if (!payload) return null;
@@ -108,6 +111,7 @@ export class HttpError extends Error {
 }
 
 export async function requireUser(): Promise<SafeUser> {
+  await ensureSchema();
   const user = await getCurrentUser();
   if (!user) throw new HttpError(401, "Önce giriş yapmalısın.");
   return user;

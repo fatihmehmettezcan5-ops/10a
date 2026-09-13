@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { ensureSchema } from "@/db/ensure";
 import {
   HttpError,
   jsonError,
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await ensureSchema();
     const body = (await request.json()) as Record<string, unknown>;
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");

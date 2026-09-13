@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { HttpError, jsonError, requireUser, toSafeUser } from "@/lib/auth";
-import { PROFILE_COLORS } from "@/lib/constants";
+import { PROFILE_COLORS, VC_OPTIONS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -12,13 +12,24 @@ export async function PATCH(request: Request) {
     const me = await requireUser();
     const body = (await request.json()) as Record<string, unknown>;
 
-    const patch: { name?: string; color?: string } = {};
+    const patch: { name?: string; color?: string; vc?: string | null } = {};
 
     if (body.name !== undefined) {
       const name = String(body.name).trim();
       if (name.length < 2) throw new HttpError(400, "Ad soyad en az 2 karakter olmalı.");
       if (name.length > 60) throw new HttpError(400, "Ad soyad çok uzun.");
       patch.name = name;
+    }
+
+    if (body.vc !== undefined) {
+      const raw = String(body.vc ?? "").trim().toUpperCase();
+      if (raw === "" || raw === "YOK" || raw === "null") {
+        patch.vc = null;
+      } else if ((VC_OPTIONS as readonly string[]).includes(raw)) {
+        patch.vc = raw;
+      } else {
+        throw new HttpError(400, "Geçersiz VC. Seçenekler: E1-E3, K1-K3.");
+      }
     }
 
     if (body.color !== undefined) {

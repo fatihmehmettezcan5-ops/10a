@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api, type AnnouncementItem, type EventItem, type HomeworkItem, type Me, type MemberItem, type SlotItem, type Stats } from "@/lib/client";
+import { VC_OPTIONS, VC_ORDER } from "@/lib/constants";
 import type { TabId } from "@/components/Dashboard";
 import {
   DAY_NAMES,
@@ -24,6 +25,7 @@ export default function OverviewPanel({
   announcements,
   members,
   reloadAnnouncements,
+  reloadMembers,
   notify,
   onGo,
 }: {
@@ -35,12 +37,29 @@ export default function OverviewPanel({
   announcements: AnnouncementItem[];
   members: MemberItem[];
   reloadAnnouncements: () => Promise<void>;
+  reloadMembers: () => Promise<void>;
   notify: (text: string) => void;
   onGo: (tab: TabId) => void;
 }) {
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
   const [annSaving, setAnnSaving] = useState(false);
+  const [vcBusyId, setVcBusyId] = useState<number | null>(null);
+
+  async function setMemberVc(memberId: number, vc: string) {
+    setVcBusyId(memberId);
+    try {
+      await api(`/api/members/${memberId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ vc }),
+      });
+      await reloadMembers();
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "VC güncellenemedi.");
+    } finally {
+      setVcBusyId(null);
+    }
+  }
 
   async function publishAnnouncement(e: React.FormEvent) {
     e.preventDefault();
@@ -284,12 +303,35 @@ export default function OverviewPanel({
                 >
                   {m.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
                 </span>
-                <div className="min-w-0 leading-tight">
+                <div className="min-w-0 flex-1 leading-tight">
                   <div className="truncate text-sm font-semibold text-slate-100">
+                    {m.vc && (
+                      <span
+                        className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${
+                          m.vc.startsWith("E") ? "bg-sky-500/20 text-sky-300" : "bg-pink-500/20 text-pink-300"
+                        }`}
+                      >
+                        {m.vc}
+                      </span>
+                    )}
                     {m.name} {m.role === "admin" && <span className="text-[10px] text-amber-300">· başkan</span>}
                   </div>
                   <div className="truncate text-[10px] text-slate-500">{m.email}</div>
                 </div>
+                <select
+                  className="input w-20 px-1.5 py-1 text-xs"
+                  value={m.vc ?? ""}
+                  disabled={vcBusyId === m.id}
+                  onChange={(e) => setMemberVc(m.id, e.target.value)}
+                  aria-label={`${m.name} VC seç`}
+                >
+                  <option value="">—</option>
+                  {VC_OPTIONS.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
               </li>
             ))}
           </ul>

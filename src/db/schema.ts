@@ -19,6 +19,7 @@ export const users = pgTable(
     passwordHash: text("password_hash").notNull(),
     role: text("role").notNull().default("student"), // student | admin
     color: text("color").notNull().default("#6366f1"),
+    vc: text("vc"), // VC grubu: E1-E3 (erkek), K1-K3 (kiz), null = atanmadi
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("users_email_unique").on(table.email)],

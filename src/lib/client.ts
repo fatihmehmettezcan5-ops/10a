@@ -4,6 +4,7 @@ export type Me = {
   email: string;
   role: string;
   color: string;
+  vc: string | null;
 };
 
 export type HomeworkItem = {
@@ -111,6 +112,7 @@ export type MemberItem = {
   email: string;
   role: string;
   color: string;
+  vc: string | null;
   createdAt: string;
 };
 
