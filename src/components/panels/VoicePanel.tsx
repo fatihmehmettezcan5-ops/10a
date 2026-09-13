@@ -37,10 +37,29 @@ export default function VoicePanel({
     api<Status>("/api/voice/status")
       .then(setStatus)
       .catch(() => setStatus({ voiceUrl: null, online: 0, rooms: [] }));
-    return () => {
-      leaveCall();
-    };
   }, []);
+
+  /** getUserMedia hatasını kullanıcıya anlamlı Türkçe mesaja çevirir. */
+  function micErrorMessage(error: unknown): string {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      if (/ wv\)/.test(navigator.userAgent)) {
+        return "Uygulama içi görünüm mikrofon vermiyor. Chrome uygulamasından sitemizi aç.";
+      }
+      return "Bu ortam mikrofon erişimini desteklemiyor. Chrome veya Safari ile siteyi aç.";
+    }
+    const name = (error as { name?: string })?.name ?? "";
+    switch (name) {
+      case "NotAllowedError":
+      case "SecurityError":
+        return "Mikrofon bu site için engellenmiş. Adres çubuğundaki kilit → İzinler → Mikrofon: İzin ver, sonra sayfayı yenile.";
+      case "NotFoundError":
+        return "Cihazda mikrofon bulunamadı.";
+      case "NotReadableError":
+        return "Mikrofon başka bir uygulama tarafından kullanılıyor (ör. arama). Diğer uygulamayı kapatıp tekrar dene.";
+      default:
+        return `Mikrofon açılamadı${name ? ` (${name})` : ""}. Tekrar dene.`;
+    }
+  }
 
   async function joinCall(target: string) {
     if (connecting || inRoom === target) return;
@@ -55,39 +74,41 @@ export default function VoicePanel({
         body: JSON.stringify({ room: target }),
       });
 
+      // Mikrofonu WS'den ÖNCE iste: izin penceresi kullanıcı hareketini kaybetmesin,
+      // hata olursa bağlantı hiç kurulmasın.
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (error) {
+        notify(micErrorMessage(error));
+        setConnecting(false);
+        return;
+      }
+      streamRef.current = stream;
+
       const ws = new WebSocket(`${url}?token=${token}&name=${encodeURIComponent(me.name)}&vc=${encodeURIComponent(me.vc)}`);
       wsRef.current = ws;
       roomRef.current = target;
 
-      ws.onopen = async () => {
+      ws.onopen = () => {
         ws.send(JSON.stringify({ type: "join", room: target }));
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          streamRef.current = stream;
-          setInRoom(target);
-          setRoom(target);
-          notify(`${target} odasına bağlandın 🎧`);
-        } catch {
-          notify("Mikrofon izni verilmedi.");
-          leaveCall();
-        } finally {
-          setConnecting(false);
-        }
+        setInRoom(target);
+        setRoom(target);
+        setMuted(false);
+        setConnecting(false);
+        notify(`${target} odasına bağlandın 🎧`);
       };
-
-      ws.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data) as Record<string, unknown>;
-          handleSignal(msg);
-        } catch {}
-      };
-
       ws.onclose = () => {
-        if (inRoom) {
+        if (roomRef.current) {
           notify("Ses bağlantısı koptu.");
           cleanup();
         }
       };
+      ws.onerror = () => {}; // hata sonrası onclose tetiklenir
     } catch (error) {
       notify(error instanceof Error ? error.message : "Bağlanamadı.");
       setConnecting(false);
@@ -207,6 +228,13 @@ export default function VoicePanel({
     setPeers([]);
     setSpeaking({});
   }
+
+  // Bileşen kaldırılınca mikrofonu ve bağlantıları kapat
+  useEffect(() => {
+    return () => {
+      leaveCall();
+    };
+  }, []);
 
   function toggleMute() {
     const stream = streamRef.current;
