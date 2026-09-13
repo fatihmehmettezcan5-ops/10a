@@ -21,6 +21,7 @@ import HomeworkPanel from "@/components/panels/HomeworkPanel";
 import CalendarPanel from "@/components/panels/CalendarPanel";
 import SchedulePanel from "@/components/panels/SchedulePanel";
 import ExamsPanel from "@/components/panels/ExamsPanel";
+import VoicePanel from "@/components/panels/VoicePanel";
 import ChatPanel from "@/components/panels/ChatPanel";
 import AssistantPanel from "@/components/panels/AssistantPanel";
 import ProfileModal from "@/components/ProfileModal";
@@ -31,6 +32,7 @@ const TABS = [
   { id: "calendar", label: "Takvim", icon: "🗓️" },
   { id: "schedule", label: "Ders Programı", icon: "⏰" },
   { id: "exams", label: "Denemeler", icon: "📊" },
+  { id: "voice", label: "VC Odaları", icon: "🎧" },
   { id: "chat", label: "Sınıf Sohbeti", icon: "💬" },
   { id: "assistant", label: "Ödev Asistanı", icon: "🤖" },
 ] as const;
@@ -241,6 +243,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
         {tab === "exams" && (
           <ExamsPanel me={me} exams={exams} groups={examGroups} reload={loadExams} notify={notify} />
         )}
+        {tab === "voice" && <VoicePanel me={me} notify={notify} />}
         {tab === "chat" && (
           <ChatPanel
             me={me}

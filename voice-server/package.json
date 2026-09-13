@@ -1,0 +1,12 @@
+{
+  "name": "10a-voice-server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "voice-server.js",
+  "scripts": {
+    "start": "node voice-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
