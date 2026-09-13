@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import {
+  announcements,
   assistantMessages,
   events,
   homeworks,
@@ -540,6 +541,67 @@ export async function deleteMockExam(id: number, userId: number, role: string) {
   }
   await db.delete(mockExams).where(eq(mockExams.id, id));
   return { id };
+}
+
+/* ------------------------------ DUYURULAR --------------------------------- */
+
+export async function listAnnouncements(limit = 10) {
+  const rows = await db
+    .select({ item: announcements, authorName: users.name, authorColor: users.color })
+    .from(announcements)
+    .leftJoin(users, eq(announcements.authorId, users.id))
+    .orderBy(desc(announcements.id))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.item.id,
+    title: r.item.title,
+    body: r.item.body,
+    authorId: r.item.authorId,
+    authorName: r.authorName ?? "Bilinmeyen",
+    authorColor: r.authorColor ?? "#94a3b8",
+    createdAt: r.item.createdAt.toISOString(),
+  }));
+}
+
+export async function createAnnouncement(authorId: number, input: Record<string, unknown>) {
+  const title = text(input.title);
+  if (title.length < 2 || title.length > 120) {
+    throw new HttpError(400, "Duyuru başlığı 2-120 karakter olmalı.");
+  }
+  const body = text(input.body);
+  if (body.length > 2000) throw new HttpError(400, "Duyuru metni en fazla 2000 karakter olabilir.");
+  const [created] = await db
+    .insert(announcements)
+    .values({ authorId, title, body })
+    .returning();
+  return created;
+}
+
+export async function deleteAnnouncement(id: number, userId: number, role: string) {
+  const rows = await db.select().from(announcements).where(eq(announcements.id, id)).limit(1);
+  const row = rows[0];
+  if (!row) throw new HttpError(404, "Duyuru bulunamadı.");
+  if (row.authorId !== userId && role !== "admin") {
+    throw new HttpError(403, "Bu duyuruyu sadece yayınlayan veya sınıf başkanı silebilir.");
+  }
+  await db.delete(announcements).where(eq(announcements.id, id));
+  return { id };
+}
+
+/** Yönetim: üye listesi (yalnız başkan). */
+export async function listMembers() {
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      color: users.color,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(asc(users.id));
+  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
 }
 
 /* -------------------------------- ÖZETLER --------------------------------- */

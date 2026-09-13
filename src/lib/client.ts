@@ -95,6 +95,25 @@ export type ExamItem = {
   createdAt: string;
 };
 
+export type AnnouncementItem = {
+  id: number;
+  title: string;
+  body: string;
+  authorId: number;
+  authorName: string;
+  authorColor: string;
+  createdAt: string;
+};
+
+export type MemberItem = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  color: string;
+  createdAt: string;
+};
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const isForm = init?.body instanceof FormData;
   const response = await fetch(path, {

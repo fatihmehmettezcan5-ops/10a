@@ -1,6 +1,7 @@
 "use client";
 
-import type { EventItem, HomeworkItem, Me, SlotItem, Stats } from "@/lib/client";
+import { useState } from "react";
+import { api, type AnnouncementItem, type EventItem, type HomeworkItem, type Me, type MemberItem, type SlotItem, type Stats } from "@/lib/client";
 import type { TabId } from "@/components/Dashboard";
 import {
   DAY_NAMES,
@@ -20,6 +21,10 @@ export default function OverviewPanel({
   homeworks,
   events,
   schedule,
+  announcements,
+  members,
+  reloadAnnouncements,
+  notify,
   onGo,
 }: {
   me: Me;
@@ -27,8 +32,44 @@ export default function OverviewPanel({
   homeworks: HomeworkItem[];
   events: EventItem[];
   schedule: SlotItem[];
+  announcements: AnnouncementItem[];
+  members: MemberItem[];
+  reloadAnnouncements: () => Promise<void>;
+  notify: (text: string) => void;
   onGo: (tab: TabId) => void;
 }) {
+  const [annTitle, setAnnTitle] = useState("");
+  const [annBody, setAnnBody] = useState("");
+  const [annSaving, setAnnSaving] = useState(false);
+
+  async function publishAnnouncement(e: React.FormEvent) {
+    e.preventDefault();
+    setAnnSaving(true);
+    try {
+      await api("/api/announcements", {
+        method: "POST",
+        body: JSON.stringify({ title: annTitle, body: annBody }),
+      });
+      setAnnTitle("");
+      setAnnBody("");
+      await reloadAnnouncements();
+      notify("Duyuru yayınlandı 📢");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Duyuru yayınlanamadı.");
+    } finally {
+      setAnnSaving(false);
+    }
+  }
+
+  async function removeAnnouncement(id: number) {
+    try {
+      await api(`/api/announcements/${id}`, { method: "DELETE" });
+      await reloadAnnouncements();
+      notify("Duyuru silindi.");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Silinemedi.");
+    }
+  }
   const jsDay = new Date().getDay();
   const dayIndex = jsDay === 0 ? 7 : jsDay;
   const todayLessons = schedule
@@ -75,6 +116,60 @@ export default function OverviewPanel({
           </button>
         </div>
       </div>
+
+      {announcements.length > 0 && (
+        <section className="card border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent p-4">
+          <h2 className="mb-2 text-sm font-bold text-amber-200">📢 Duyurular</h2>
+          <ul className="space-y-2">
+            {announcements.map((a) => (
+              <li key={a.id} className="rounded-lg bg-slate-900/50 px-3 py-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-white">{a.title}</div>
+                    {a.body && <div className="mt-0.5 whitespace-pre-wrap break-words text-xs text-slate-300">{a.body}</div>}
+                    <div className="mt-1 text-[10px] text-slate-500">
+                      {a.authorName} · {formatDateTR(a.createdAt.slice(0, 10))}
+                    </div>
+                  </div>
+                  {(me.role === "admin" || a.authorId === me.id) && (
+                    <button
+                      onClick={() => removeAnnouncement(a.id)}
+                      className="shrink-0 text-slate-600 transition hover:text-rose-400"
+                      aria-label="Duyuruyu sil"
+                    >
+                      🗑
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {me.role === "admin" && (
+        <form onSubmit={publishAnnouncement} className="card space-y-2 p-4">
+          <h2 className="text-sm font-bold text-white">📢 Duyuru yayınla</h2>
+          <input
+            className="input"
+            value={annTitle}
+            onChange={(e) => setAnnTitle(e.target.value)}
+            placeholder="Duyuru başlığı (örn. Yarın fizik yazılısı)"
+            maxLength={120}
+            required
+          />
+          <textarea
+            className="input min-h-16"
+            value={annBody}
+            onChange={(e) => setAnnBody(e.target.value)}
+            placeholder="Detay (isteğe bağlı) — saat, yer, notlar..."
+            maxLength={2000}
+          />
+          <button className="btn btn-primary" disabled={annSaving || annTitle.trim().length < 2}>
+            {annSaving ? "..." : "Sınıfa yayınla"}
+          </button>
+        </form>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((card) => (
@@ -176,6 +271,30 @@ export default function OverviewPanel({
           )}
         </section>
       </div>
+
+      {me.role === "admin" && members.length > 0 && (
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-bold text-white">👥 Sınıf üyeleri ({members.length})</h2>
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {members.map((m) => (
+              <li key={m.id} className="flex items-center gap-2 rounded-lg bg-slate-800/40 px-3 py-2">
+                <span
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-bold text-white"
+                  style={{ background: m.color }}
+                >
+                  {m.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
+                </span>
+                <div className="min-w-0 leading-tight">
+                  <div className="truncate text-sm font-semibold text-slate-100">
+                    {m.name} {m.role === "admin" && <span className="text-[10px] text-amber-300">· başkan</span>}
+                  </div>
+                  <div className="truncate text-[10px] text-slate-500">{m.email}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

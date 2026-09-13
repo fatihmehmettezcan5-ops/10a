@@ -6,8 +6,10 @@ import {
   api,
   type ChatItem,
   type EventItem,
+  type AnnouncementItem,
   type ExamItem,
   type HomeworkItem,
+  type MemberItem,
   type Me,
   type SlotItem,
   type Stats,
@@ -43,6 +45,8 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [schedule, setSchedule] = useState<SlotItem[]>([]);
   const [exams, setExams] = useState<ExamItem[]>([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
+  const [members, setMembers] = useState<MemberItem[]>([]);
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [chatDraft, setChatDraft] = useState("");
@@ -73,6 +77,11 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
     setExams(data.exams);
   }, []);
 
+  const loadAnnouncements = useCallback(async () => {
+    const data = await api<{ announcements: AnnouncementItem[] }>("/api/announcements");
+    setAnnouncements(data.announcements);
+  }, []);
+
   const loadMessages = useCallback(async () => {
     const data = await api<{ messages: ChatItem[] }>("/api/messages");
     setMessages(data.messages);
@@ -84,10 +93,19 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
   }, []);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([loadHomeworks(), loadEvents(), loadSchedule(), loadMessages(), loadStats(), loadExams()]).catch(
+    await Promise.all([
+      loadHomeworks(),
+      loadEvents(),
+      loadSchedule(),
+      loadMessages(),
+      loadStats(),
+      loadExams(),
+      loadAnnouncements(),
+      ...(me.role === "admin" ? [api<{ members: MemberItem[] }>("/api/members").then((d) => setMembers(d.members))] : []),
+    ]).catch(
       (error: unknown) => notify(error instanceof Error ? error.message : "Veri yüklenemedi."),
     );
-  }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, loadExams, notify]);
+  }, [loadHomeworks, loadEvents, loadSchedule, loadMessages, loadStats, loadExams, loadAnnouncements, me.role, notify]);
 
   useEffect(() => {
     // İlk veri yüklemesi effect içinde yapılıyor; setState burada senkron çağrılmıyor
@@ -168,6 +186,10 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
             homeworks={homeworks}
             events={events}
             schedule={schedule}
+            announcements={announcements}
+            members={members}
+            reloadAnnouncements={loadAnnouncements}
+            notify={notify}
             onGo={setTab}
           />
         )}

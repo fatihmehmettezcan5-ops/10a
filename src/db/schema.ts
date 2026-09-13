@@ -121,6 +121,17 @@ export const mockExams = pgTable(
   (table) => [index("mock_exams_user_date_idx").on(table.userId, table.date)],
 );
 
+/** Başkan tarafından yayınlanan, tüm sınıfa görünen duyurular. */
+export const announcements = pgTable("announcements", {
+  id: serial("id").primaryKey(),
+  authorId: integer("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const assistantMessages = pgTable("assistant_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
@@ -140,3 +151,4 @@ export type ScheduleSlot = typeof scheduleSlots.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type AssistantMessage = typeof assistantMessages.$inferSelect;
 export type MockExam = typeof mockExams.$inferSelect;
+export type Announcement = typeof announcements.$inferSelect;
