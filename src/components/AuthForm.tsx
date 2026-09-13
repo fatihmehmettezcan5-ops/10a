@@ -34,7 +34,15 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="card p-6 shadow-2xl">
+    <div className="card overflow-hidden p-6 shadow-2xl">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-black text-white shadow-lg">
+          10A
+        </div>
+        <h1 className="mt-3 text-lg font-bold text-white">10/A Sınıf Paneli</h1>
+        <p className="mt-0.5 text-xs text-slate-400">Ödevler, denemeler, sohbet ve asistan — tek yerde.</p>
+      </div>
+
       <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-900/70 p-1 text-sm font-semibold">
         {(["login", "register"] as Mode[]).map((m) => (
           <button

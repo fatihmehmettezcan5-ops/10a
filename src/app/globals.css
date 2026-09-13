@@ -2,27 +2,268 @@
 
 :root {
   color-scheme: dark;
+  --bg: #05070c;
+  --surface: rgba(15, 20, 31, 0.72);
+  --surface-solid: #0d1220;
+  --border: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.22);
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.14);
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-faint: #64748b;
+}
+
+html {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background:
-    radial-gradient(1000px 600px at 10% -10%, rgba(99, 102, 241, 0.22), transparent 60%),
-    radial-gradient(900px 500px at 90% 0%, rgba(236, 72, 153, 0.16), transparent 55%),
-    #060913;
+    radial-gradient(1100px 500px at 85% -10%, rgba(99, 102, 241, 0.10), transparent 60%),
+    radial-gradient(800px 420px at -10% 0%, rgba(56, 189, 248, 0.07), transparent 55%),
+    var(--bg);
   min-height: 100vh;
+  color: var(--text);
+  overscroll-behavior-y: contain;
+  font-feature-settings: "cv02", "cv03", "cv04";
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.22);
   border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ----------------------------- Yüzeyler ----------------------------- */
+
+.card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  border-radius: 0.875rem;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 8px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+.card-hover {
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 12px 32px -12px rgba(0, 0, 0, 0.55);
+}
+
+/* Bölüm başlığı: küçük, üst çizgili, profesyonel etiket */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ------------------------------ Form ------------------------------- */
+
+.input {
+  width: 100%;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border-strong);
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.input:focus {
+  border-color: rgba(129, 140, 248, 0.9);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
+}
+.input::placeholder {
+  color: rgba(148, 163, 184, 0.55);
+}
+select.input option {
+  background: #0b1220;
+}
+
+/* ----------------------------- Butonlar ---------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: all 0.14s ease;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5, #6d28d9);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4338ca, #5b21b6);
+}
+
+.btn-ghost {
+  border: 1px solid var(--border-strong);
+  background: rgba(15, 23, 42, 0.45);
+  color: var(--text-dim);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: rgba(129, 140, 248, 0.45);
+  color: #e2e8f0;
+  background: rgba(30, 41, 59, 0.55);
+}
+
+.btn-danger {
+  background: rgba(225, 29, 72, 0.14);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(225, 29, 72, 0.24);
+}
+
+/* --------------------------- Navigasyon ---------------------------- */
+
+/* Kenar çubuğu öğesi (masaüstü) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  border-radius: 0.625rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.855rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  transition: all 0.13s ease;
+  text-align: left;
+}
+.nav-item:hover {
+  background: rgba(148, 163, 184, 0.07);
+  color: var(--text);
+}
+.nav-item-active {
+  background: var(--accent-soft);
+  color: #c7d2fe;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.nav-item-active:hover {
+  background: var(--accent-soft);
+  color: #c7d2fe;
+}
+
+/* Alt sekme çubuğu (mobil uygulama) */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  border-top: 1px solid var(--border);
+  background: rgba(8, 11, 18, 0.92);
+  backdrop-filter: blur(18px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bottom-nav-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.45rem 0 0.4rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  transition: color 0.13s ease;
+}
+.bottom-nav-item:active {
+  transform: scale(0.94);
+}
+.bottom-nav-item .bn-icon {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+.bottom-nav-active {
+  color: #a5b4fc;
+}
+.bottom-nav-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* ------------------------------ Toast ------------------------------ */
+
+.toast {
+  position: fixed;
+  bottom: 5.25rem;
+  left: 50%;
+  z-index: 60;
+  transform: translateX(-50%);
+  max-width: min(92vw, 26rem);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  background: rgba(13, 18, 32, 0.97);
+  padding: 0.6rem 0.95rem;
+  font-size: 0.84rem;
+  color: var(--text);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* --------------------------- Animasyonlar -------------------------- */
 
 @keyframes fadeUp {
   from {
@@ -31,87 +272,13 @@ body {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
-
 .fade-up {
-  animation: fadeUp 0.25s ease-out both;
+  animation: fadeUp 0.22s ease-out;
 }
 
-.card {
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(15, 23, 42, 0.62);
-  backdrop-filter: blur(14px);
-  border-radius: 1rem;
-}
-
-.input {
-  width: 100%;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(2, 6, 23, 0.6);
-  padding: 0.6rem 0.8rem;
-  font-size: 0.875rem;
-  color: rgb(226, 232, 240);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.input:focus {
-  border-color: rgba(129, 140, 248, 0.8);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-}
-.input::placeholder {
-  color: rgba(148, 163, 184, 0.6);
-}
-select.input option {
-  background: #0b1220;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  border-radius: 0.75rem;
-  padding: 0.55rem 0.95rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: all 0.15s ease;
-  cursor: pointer;
-}
-.btn-primary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  box-shadow: 0 8px 24px -12px rgba(99, 102, 241, 0.9);
-}
-.btn-primary:hover {
-  filter: brightness(1.1);
-}
-.btn-ghost {
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  color: rgb(203, 213, 225);
-  background: rgba(30, 41, 59, 0.4);
-}
-.btn-ghost:hover {
-  background: rgba(51, 65, 85, 0.6);
-}
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* Mobil uygulama hissi: tarayıcı/el hareketi etkilerini kapat */
-html {
-  overscroll-behavior: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-body {
-  overscroll-behavior-y: contain;
-}
-
-/* Yeni mesaj balonu: WhatsApp gibi alttan yumuşak giriş */
 @keyframes msgIn {
   from {
     opacity: 0;
@@ -122,7 +289,20 @@ body {
     transform: none;
   }
 }
-
 .msg-in {
   animation: msgIn 0.18s ease-out;
+}
+
+@keyframes sheetUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.sheet-up {
+  animation: sheetUp 0.2s ease-out;
 }

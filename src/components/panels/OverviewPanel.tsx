@@ -100,24 +100,32 @@ export default function OverviewPanel({
 
   return (
     <div className="space-y-5">
-      <div className="card bg-gradient-to-br from-indigo-500/15 to-transparent p-5">
-        <h1 className="text-2xl font-black text-white">
-          Merhaba {me.name.split(" ")[0]} 👋
-        </h1>
-        <p className="mt-1 text-sm text-slate-300">
-          Bugün {formatDateTR(today)}. {todayLessons.length > 0 ? `${todayLessons.length} ders var.` : "Bugün ders kaydı yok."}{" "}
-          {stats && stats.overdue > 0 ? `${stats.overdue} ödevin süresi geçmiş!` : "Her şey yolunda görünüyor."}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button className="btn btn-primary" onClick={() => onGo("homework")}>
-            ➕ Ödev ekle
-          </button>
-          <button className="btn btn-ghost" onClick={() => onGo("calendar")}>
-            🗓️ Hatırlatıcı kur
-          </button>
-          <button className="btn btn-ghost" onClick={() => onGo("assistant")}>
-            🤖 Asistana sor
-          </button>
+      <div className="card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {formatDateTR(today)}
+            </p>
+            <h1 className="mt-0.5 text-xl font-bold text-white">
+              Merhaba {me.name.split(" ")[0]} 👋
+            </h1>
+            <p className="mt-1 text-sm text-slate-400">
+              {todayLessons.length > 0 ? `Bugün ${todayLessons.length} ders var.` : "Bugün ders kaydı yok."}{" "}
+              {stats && stats.overdue > 0 ? (
+                <span className="font-semibold text-rose-300">{stats.overdue} ödevin süresi geçmiş!</span>
+              ) : (
+                "Her şey yolunda görünüyor."
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn btn-primary" onClick={() => onGo("homework")}>
+              ➕ Ödev ekle
+            </button>
+            <button className="btn btn-ghost" onClick={() => onGo("assistant")}>
+              🤖 Asistana sor
+            </button>
+          </div>
         </div>
       </div>
 
