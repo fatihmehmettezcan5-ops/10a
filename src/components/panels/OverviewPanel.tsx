@@ -103,7 +103,7 @@ export default function OverviewPanel({
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               {formatDateTR(today)}
             </p>
             <h1 className="mt-0.5 text-xl font-bold text-white">
@@ -139,14 +139,14 @@ export default function OverviewPanel({
                   <div className="min-w-0">
                     <div className="text-sm font-bold text-white">{a.title}</div>
                     {a.body && <div className="mt-0.5 whitespace-pre-wrap break-words text-xs text-slate-300">{a.body}</div>}
-                    <div className="mt-1 text-[10px] text-slate-500">
+                    <div className="mt-1 text-[11px] text-slate-400">
                       {a.authorName} · {formatDateTR(a.createdAt.slice(0, 10))}
                     </div>
                   </div>
                   {(me.role === "admin" || a.authorId === me.id) && (
                     <button
                       onClick={() => removeAnnouncement(a.id)}
-                      className="shrink-0 text-slate-600 transition hover:text-rose-400"
+                      className="shrink-0 text-slate-400 transition hover:text-rose-400"
                       aria-label="Duyuruyu sil"
                     >
                       🗑
@@ -211,10 +211,10 @@ export default function OverviewPanel({
                   className="flex items-center justify-between rounded-lg bg-slate-800/40 px-3 py-2 text-sm"
                 >
                   <span className="text-slate-200">
-                    <span className="mr-2 text-xs text-slate-500">{slot.period}.</span>
+                    <span className="mr-2 text-xs text-slate-400">{slot.period}.</span>
                     {slot.subject}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-400">
                     {slot.startTime}–{slot.endTime}
                   </span>
                 </li>
@@ -259,7 +259,7 @@ export default function OverviewPanel({
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-medium text-slate-100">{hw.title}</span>
                       <span
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] ${
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${
                           STATUS_STYLES[hw.status as HomeworkStatus] ?? ""
                         }`}
                       >
@@ -298,9 +298,9 @@ export default function OverviewPanel({
                 </span>
                 <div className="min-w-0 flex-1 leading-tight">
                   <div className="truncate text-sm font-semibold text-slate-100">
-                    {m.name} {m.role === "admin" && <span className="text-[10px] text-amber-300">· başkan</span>}
+                    {m.name} {m.role === "admin" && <span className="text-[11px] text-amber-300">· başkan</span>}
                   </div>
-                  <div className="truncate text-[10px] text-slate-500">{m.email}</div>
+                  <div className="truncate text-[11px] text-slate-400">{m.email}</div>
                 </div>
                 
               </li>

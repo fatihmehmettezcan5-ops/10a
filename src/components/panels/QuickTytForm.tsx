@@ -117,7 +117,7 @@ export default function QuickTytForm({
       <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1">
         {TYT_SECTIONS.map((section) => (
           <div key={section.id} className="rounded-xl border border-slate-800 p-2.5">
-            <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">{section.label}</div>
+            <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">{section.label}</div>
             <div className="space-y-1.5">
               {section.subjects.map((x) => {
                 if (x.optional && !(x.name === "Felsefe" && felsefe)) return null;
@@ -125,7 +125,7 @@ export default function QuickTytForm({
                 return (
                   <div key={x.name} className="grid grid-cols-[1fr_84px_46px] items-center gap-1.5">
                     <div className="text-xs font-semibold text-slate-200">
-                      {x.name} <span className="text-[10px] font-normal text-slate-500">({x.questions} soru)</span>
+                      {x.name} <span className="text-[11px] font-normal text-slate-400">({x.questions} soru)</span>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
                       {(["d", "y", "b"] as const).map((f) => (
@@ -159,7 +159,7 @@ export default function QuickTytForm({
           {saving ? "..." : "Denemeyi Kaydet"}
         </button>
       </div>
-      <p className="text-center text-[10px] text-slate-500">
+      <p className="text-center text-[11px] text-slate-400">
         Boş bıraktığın dersler kaydedilmez. Net = doğru − yanlış/4.
       </p>
     </form>

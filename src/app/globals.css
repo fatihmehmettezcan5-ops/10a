@@ -11,7 +11,7 @@
   --accent-soft: rgba(245, 158, 11, 0.13);
   --text: #e2e8f0;
   --text-dim: #94a3b8;
-  --text-faint: #64748b;
+  --text-faint: #8494a7;
 }
 
 html {
@@ -104,7 +104,7 @@ body {
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
 }
 .input::placeholder {
-  color: rgba(148, 163, 184, 0.55);
+  color: rgba(148, 163, 184, 0.75);
 }
 select.input option {
   background: #0b1220;
@@ -217,7 +217,7 @@ select.input option {
   align-items: center;
   gap: 2px;
   padding: 0.45rem 0 0.4rem;
-  font-size: 0.58rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-faint);
   transition: color 0.13s ease;
@@ -226,7 +226,7 @@ select.input option {
   transform: scale(0.94);
 }
 .bottom-nav-item .bn-icon {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   line-height: 1.2;
 }
 .bottom-nav-active {

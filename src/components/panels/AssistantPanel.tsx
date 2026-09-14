@@ -124,7 +124,7 @@ function CodeRunner({ code, language }: { code: string; language: string }) {
   return (
     <div className="mt-2 rounded-lg border border-white/10 bg-[#0b141a] p-2 font-mono text-xs shadow-inner">
       <div className="max-h-44 space-y-0.5 overflow-y-auto">
-        {lines.length === 0 && !done && <p className="text-slate-500">çalışıyor...</p>}
+        {lines.length === 0 && !done && <p className="text-slate-400">çalışıyor...</p>}
         {lines.map((line, i) => (
           <p
             key={i}
@@ -143,7 +143,7 @@ function CodeRunner({ code, language }: { code: string; language: string }) {
             setDone(false);
             setRunKey((k) => k + 1);
           }}
-          className="mt-1 rounded bg-white/5 px-2 py-0.5 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white"
+          className="mt-1 rounded bg-white/5 px-2 py-0.5 text-[11px] text-slate-300 hover:bg-white/10 hover:text-white"
         >
           ↻ tekrar çalıştır
         </button>
@@ -184,7 +184,7 @@ function ArtifactCard({ artifact }: { artifact: AssistantArtifact }) {
   return (
     <div className="mt-2 rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/5 p-2.5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded bg-fuchsia-500/20 px-1.5 py-0.5 text-[10px] font-bold text-fuchsia-300">
+        <span className="rounded bg-fuchsia-500/20 px-1.5 py-0.5 text-[11px] font-bold text-fuchsia-300">
           {LANG_LABELS[lang] ?? artifact.language.toUpperCase()}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-100">{artifact.title}</span>
@@ -250,7 +250,7 @@ function metaOf(message: AssistantItem, type: string): { items?: unknown } | nul
 function DaySeparator({ iso }: { iso: string }) {
   return (
     <div className="my-3 flex justify-center">
-      <span className="rounded-lg bg-[#182229] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 shadow">
+      <span className="rounded-lg bg-[#182229] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 shadow">
         {dayLabel(iso)}
       </span>
     </div>
@@ -548,11 +548,8 @@ export default function AssistantPanel({
                     {!grouped && (
                       <span
                         aria-hidden
-                        className={`absolute top-0 h-3 w-3 ${mine ? "right-[-7px]" : "left-[-7px]"}`}
-                        style={{
-                          background: bubbleBg,
-                          clipPath: mine ? "polygon(0 0, 100% 0, 100% 100%)" : "polygon(0 0, 100% 0, 0 100%)",
-                        }}
+                        className={`absolute top-0 h-3 w-3 rotate-45 ${mine ? "right-[-5px] rounded-br-[3px]" : "left-[-5px] rounded-bl-[3px]"}`}
+                        style={{ background: bubbleBg }}
                       />
                     )}
                     <div
@@ -573,12 +570,12 @@ export default function AssistantPanel({
                       {artifactsMeta?.items?.map((artifact, i) => <ArtifactCard key={i} artifact={artifact} />)}
 
                       <div
-                        className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none ${
+                        className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] leading-none ${
                           mine ? "text-emerald-100/75" : "text-slate-400/80"
                         }`}
                       >
                         <span>{timeLabel(message.createdAt)}</span>
-                        {mine && <span className="text-[9px] tracking-tighter">✓✓</span>}
+                        {mine && <span className="text-[11px] tracking-tighter">✓✓</span>}
                       </div>
 
                       {message.id === lastAssistantId && followupsMeta?.items && followupsMeta.items.length > 0 && (
@@ -609,7 +606,7 @@ export default function AssistantPanel({
                 🤖
               </span>
               <div className="relative rounded-lg rounded-tl-none bg-[#202c33] px-3 py-2.5 shadow-sm">
-                <span aria-hidden className="absolute left-[-7px] top-0 h-3 w-3" style={{ background: BUBBLE_IN, clipPath: "polygon(0 0, 100% 0, 0 100%)" }} />
+                <span aria-hidden className="absolute left-[-5px] top-0 h-3 w-3 rotate-45 rounded-bl-[3px]" style={{ background: BUBBLE_IN }} />
                 <span className="inline-flex items-center gap-1">
                   <span className="dot-typing h-1.5 w-1.5 rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
                   <span className="dot-typing h-1.5 w-1.5 rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
@@ -639,7 +636,7 @@ export default function AssistantPanel({
                 <button
                   type="button"
                   onClick={() => removeStaged(index)}
-                  className="text-slate-500 transition hover:text-rose-300"
+                  className="text-slate-400 transition hover:text-rose-300"
                   aria-label="Eki kaldır"
                 >
                   ✕
@@ -693,7 +690,7 @@ export default function AssistantPanel({
               </button>
               <textarea
                 ref={inputRef}
-                className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-[13.5px] text-slate-100 outline-none placeholder:text-slate-500"
+                className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-[13.5px] text-slate-100 outline-none placeholder:text-slate-400"
                 value={input}
                 rows={1}
                 onChange={(e) => {
@@ -714,7 +711,7 @@ export default function AssistantPanel({
             </button>
           </form>
           {research && (
-            <p className="mt-1.5 pl-2 text-[10px] text-emerald-300/90">
+            <p className="mt-1.5 pl-2 text-[11px] text-emerald-300/90">
               🔬 Araştırma modu açık: cevaplamadan önce web&apos;de arar, kaynakları gösterir.
             </p>
           )}
@@ -758,7 +755,7 @@ export default function AssistantPanel({
                 <button
                   type="button"
                   onClick={() => void deleteProjectDo(p.id)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 hover:text-rose-300"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 hover:text-rose-300"
                   aria-label={`${p.name} projesini sil`}
                 >
                   ✕
@@ -779,7 +776,7 @@ export default function AssistantPanel({
               ➕
             </button>
           </div>
-          <p className="mt-1.5 text-[10px] text-slate-500">
+          <p className="mt-1.5 text-[11px] text-slate-400">
             Her projenin kendi sohbeti olur; proje seçiliyken yazdıkların o projeye kaydedilir.
           </p>
         </section>
@@ -787,7 +784,7 @@ export default function AssistantPanel({
         <section className="card p-4">
           <h2 className="mb-2 text-sm font-bold text-white">🧠 Hafıza ({memories.length})</h2>
           {memories.length === 0 ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               Henüz bir şey öğrenmedi. Sohbette önemli bilgiler verirsen (hedefler, tercihler) kendiliğinden kaydeder;
               &quot;beni hatırla: ...&quot; diye de öğretebilirsin.
             </p>
@@ -802,7 +799,7 @@ export default function AssistantPanel({
                   <button
                     type="button"
                     onClick={() => void deleteMemoryDo(m.id)}
-                    className="text-slate-500 hover:text-rose-300"
+                    className="text-slate-400 hover:text-rose-300"
                     aria-label="Hatırlatmayı sil"
                   >
                     ✕

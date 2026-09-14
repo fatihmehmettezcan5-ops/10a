@@ -252,7 +252,7 @@ export default function VoicePanel({
             Ses sunucusu henüz yapılandırılmadı. Netlify ortam değişkenlerine VOICE_SECRET ekleyin.
           </div>
         )}
-        {status && <p className="mt-2 text-[10px] text-slate-500">Şu an seste {status.online} kişi var.</p>}
+        {status && <p className="mt-2 text-[11px] text-slate-400">Şu an seste {status.online} kişi var.</p>}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -281,7 +281,7 @@ export default function VoicePanel({
                 >
                   {r}
                 </span>
-                <span className="text-[10px] text-slate-500">{online} kişi</span>
+                <span className="text-[11px] text-slate-400">{online} kişi</span>
               </div>
               <div className="mt-2 text-xs text-slate-400">
                 {active ? "Bağlısın — çıkmak için tıkla" : connecting ? "..." : "Katıl"}
@@ -315,7 +315,7 @@ export default function VoicePanel({
                 {p.split(" ")[0]} {speaking[p] ? "🗣" : ""}
               </span>
             ))}
-            {peers.length === 0 && <span className="text-xs text-slate-500">Odaya seni bekliyorlar…</span>}
+            {peers.length === 0 && <span className="text-xs text-slate-400">Odaya seni bekliyorlar…</span>}
           </div>
         </div>
       )}

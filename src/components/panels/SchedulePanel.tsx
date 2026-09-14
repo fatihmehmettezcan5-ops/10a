@@ -109,7 +109,7 @@ export default function SchedulePanel({
         <table className="w-full min-w-3xl border-separate border-spacing-1">
           <thead>
             <tr>
-              <th className="w-20 text-[10px] uppercase text-slate-500">Saat</th>
+              <th className="w-20 text-[11px] uppercase text-slate-400">Saat</th>
               {DAY_NAMES.map((day, index) => (
                 <th
                   key={day}
@@ -131,7 +131,7 @@ export default function SchedulePanel({
                 <tr key={period}>
                   <td className="rounded-lg bg-slate-900/60 px-2 py-2 text-center align-middle">
                     <div className="text-xs font-bold text-slate-300">{period}.</div>
-                    <div className="text-[9px] text-slate-500">{startTime}–{endTime}</div>
+                    <div className="text-[11px] text-slate-400">{startTime}–{endTime}</div>
                   </td>
                   {DAY_NAMES.map((_, dayIndex) => {
                     const day = dayIndex + 1;
@@ -153,9 +153,9 @@ export default function SchedulePanel({
                             {slot?.subject ?? "+"}
                           </div>
                           {slot?.teacher && (
-                            <div className="truncate text-[10px] text-slate-400">{slot.teacher}</div>
+                            <div className="truncate text-[11px] text-slate-400">{slot.teacher}</div>
                           )}
-                          {slot?.room && <div className="truncate text-[10px] text-slate-500">{slot.room}</div>}
+                          {slot?.room && <div className="truncate text-[11px] text-slate-400">{slot.room}</div>}
                         </button>
                       </td>
                     );

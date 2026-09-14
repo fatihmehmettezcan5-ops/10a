@@ -158,11 +158,11 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
       </span>
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-xs font-semibold text-white">{me.name}</span>
-        <span className="block text-[10px] text-slate-400">
+        <span className="block text-[11px] text-slate-400">
           {me.role === "admin" ? "Sınıf başkanı" : "Öğrenci"}
         </span>
       </span>
-      <span aria-hidden className="text-slate-500">⚙️</span>
+      <span aria-hidden className="text-slate-400">⚙️</span>
     </button>
   );
 
@@ -177,7 +177,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
             </div>
             <div className="leading-tight">
               <div className="text-sm font-bold text-white">{CLASS_NAME} Paneli</div>
-              <div className="text-[10.5px] text-slate-400">
+              <div className="text-xs text-slate-400">
                 {stats ? `${stats.members} üye · ${stats.open} açık ödev` : "yükleniyor…"}
               </div>
             </div>
@@ -214,7 +214,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
           </div>
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-sm font-bold text-white">{activeTab?.label ?? CLASS_NAME}</div>
-            <div className="text-[10px] text-slate-400">
+            <div className="text-[11px] text-slate-400">
               {stats ? `${stats.members} üye · ${stats.open} açık ödev` : "\u00A0"}
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
             aria-label="Profil"
           >
             <span
-              className="grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold text-white"
+              className="grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold text-white"
               style={{ background: me.color }}
             >
               {me.name.slice(0, 1).toLocaleUpperCase("tr-TR")}

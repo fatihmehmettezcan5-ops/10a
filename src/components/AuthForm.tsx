@@ -112,7 +112,7 @@ export default function AuthForm() {
               placeholder="10A"
               required
             />
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-slate-400">
               Varsayılan kod <span className="font-mono text-slate-300">10A</span>. Sunucuda{" "}
               <span className="font-mono">CLASS_JOIN_CODE</span> ile değiştirebilirsin. İlk kayıt olan kişi
               sınıf başkanı (admin) olur.
@@ -131,7 +131,7 @@ export default function AuthForm() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-500">
+      <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-400">
         Şifreler scrypt + rastgele tuz ile saklanır, oturum HMAC imzalı httpOnly çerezde tutulur.
       </p>
     </div>

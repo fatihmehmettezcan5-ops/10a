@@ -171,7 +171,7 @@ export default function CalendarPanel({
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase text-slate-500">
+        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase text-slate-400">
           {WEEK_HEADERS.map((d) => (
             <div key={d} className="py-1">
               {d}
@@ -220,14 +220,14 @@ export default function CalendarPanel({
                   ))}
                 </div>
                 {cellEvents[0] && (
-                  <div className="truncate text-[9px] text-slate-400">{cellEvents[0].title}</div>
+                  <div className="truncate text-[11px] text-slate-400">{cellEvents[0].title}</div>
                 )}
               </button>
             );
           })}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-slate-500">
+        <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-400">
           <span className="flex items-center gap-1">
             <i className="h-2 w-2 rounded-full bg-indigo-400" /> Sınıf hatırlatıcısı
           </span>
@@ -253,7 +253,7 @@ export default function CalendarPanel({
                     <div>
                       <div
                         className={`text-sm font-semibold ${
-                          event.done ? "text-slate-500 line-through" : "text-slate-100"
+                          event.done ? "text-slate-400 line-through" : "text-slate-100"
                         }`}
                       >
                         {EVENT_TYPE_EMOJI[event.type as EventType] ?? "🔔"} {event.title}

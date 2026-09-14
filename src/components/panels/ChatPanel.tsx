@@ -44,11 +44,11 @@ function ReadInfoList({
           </p>
         </div>
         <ul className="max-h-64 overflow-y-auto px-2 py-2">
-          {others.length === 0 && <li className="px-2 py-3 text-center text-xs text-slate-500">Henüz kimse görmedi.</li>}
+          {others.length === 0 && <li className="px-2 py-3 text-center text-xs text-slate-400">Henüz kimse görmedi.</li>}
           {others.map((r) => (
             <li key={r.userId} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-white/5">
               <span className="min-w-0 flex-1 truncate text-slate-200">{r.name}</span>
-              <span className="shrink-0 text-[10px] text-slate-400">
+              <span className="shrink-0 text-[11px] text-slate-400">
                 {new Date(r.readAt).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </span>
             </li>
@@ -70,7 +70,7 @@ function SendIcon({ className = "" }: { className?: string }) {
 function DaySeparator({ iso }: { iso: string }) {
   return (
     <div className="my-3 flex justify-center">
-      <span className="rounded-lg bg-[#182229] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 shadow">
+      <span className="rounded-lg bg-[#182229] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 shadow">
         {dayLabel(iso)}
       </span>
     </div>
@@ -461,7 +461,7 @@ export default function ChatPanel({
               <span aria-hidden className="text-base">{fileIcon(att.mime, att.name)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block max-w-44 truncate">{att.name}</span>
-                {att.size > 0 && <span className="block text-[10px] opacity-60">{humanSize(att.size)}</span>}
+                {att.size > 0 && <span className="block text-[11px] opacity-60">{humanSize(att.size)}</span>}
               </span>
               <span aria-hidden className="text-sm opacity-60">⬇</span>
             </a>
@@ -486,7 +486,7 @@ export default function ChatPanel({
           onClick={(e) => e.stopPropagation()}
         >
           {menuMessage.userId === me.id && me.role !== "admin" && (
-            <p className="px-3 py-1.5 text-[10px] text-slate-500">Sohbetteki son 15 dk içinde düzenleyebilirsin</p>
+            <p className="px-3 py-1.5 text-[11px] text-slate-400">Sohbetteki son 15 dk içinde düzenleyebilirsin</p>
           )}
           <button
             type="button"
@@ -533,7 +533,7 @@ export default function ChatPanel({
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
             >
               👀 Görüldü bilgisi{" "}
-              <span className="ml-auto text-[10px] text-slate-500">
+              <span className="ml-auto text-[11px] text-slate-400">
                 {menuMessage.reads.filter((r) => r.userId !== me.id).length}
               </span>
             </button>
@@ -674,11 +674,8 @@ export default function ChatPanel({
                   {!grouped && (
                     <span
                       aria-hidden
-                      className={`absolute top-0 h-3 w-3 ${mine ? "right-[-7px]" : "left-[-7px]"}`}
-                      style={{
-                        background: bubbleBg,
-                        clipPath: mine ? "polygon(0 0, 100% 0, 100% 100%)" : "polygon(0 0, 100% 0, 0 100%)",
-                      }}
+                      className={`absolute top-0 h-3 w-3 rotate-45 ${mine ? "right-[-5px] rounded-br-[3px]" : "left-[-5px] rounded-bl-[3px]"}`}
+                      style={{ background: bubbleBg }}
                     />
                   )}
                   <div
@@ -695,7 +692,7 @@ export default function ChatPanel({
                     {message.deletedForAll ? (
                       <span className="flex items-center gap-1.5 text-[13px] text-slate-400">
                         <span aria-hidden>🚫</span> Bu mesaj silindi
-                        <span className="ml-1 text-[10px] not-italic opacity-70">{message.authorName}</span>
+                        <span className="ml-1 text-[11px] not-italic opacity-70">{message.authorName}</span>
                       </span>
                     ) : editingId === message.id ? (
                       <div className="flex items-center gap-2">
@@ -740,25 +737,25 @@ export default function ChatPanel({
                           {isAi ? "10A Asistan" : message.authorName}
                         </span>
                         {isAi && (
-                          <span className="rounded bg-emerald-500/20 px-1 py-px text-[9px] font-bold text-emerald-300">
+                          <span className="rounded bg-emerald-500/20 px-1 py-px text-[11px] font-bold text-emerald-300">
                             YAPAY ZEKÂ
                           </span>
                         )}
                         {message.authorRole === "admin" && !isAi && (
-                          <span className="rounded bg-amber-500/15 px-1 py-px text-[9px] font-bold text-amber-300">
+                          <span className="rounded bg-amber-500/15 px-1 py-px text-[11px] font-bold text-amber-300">
                             başkan
                           </span>
                         )}
                       </div>
                     )}
                     {mentionedMe && !mine && (
-                      <div className="mb-0.5 inline-block rounded bg-[#182229] px-1.5 py-px text-[10px] font-semibold text-[#53bdeb]">
+                      <div className="mb-0.5 inline-block rounded bg-[#182229] px-1.5 py-px text-[11px] font-semibold text-[#53bdeb]">
                         ↩ senden bahsetti
                       </div>
                     )}
 
                     {message.homeworkId && (
-                      <span className="mr-1 rounded bg-black/25 px-1.5 py-0.5 text-[10px] font-semibold">
+                      <span className="mr-1 rounded bg-black/25 px-1.5 py-0.5 text-[11px] font-semibold">
                         ödev #{message.homeworkId}
                       </span>
                     )}
@@ -768,17 +765,17 @@ export default function ChatPanel({
                     )}
 
                     <div
-                      className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none ${
+                      className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] leading-none ${
                         mine ? "text-emerald-100/75" : "text-slate-400/80"
                       }`}
                     >
                       {message.edited && <span className="italic opacity-70">düzenlendi</span>}
                       <span>{timeLabel(message.createdAt)}</span>
-                      {mine && message.deletedForAll && <span className="text-[9px] tracking-tighter">✓</span>}
+                      {mine && message.deletedForAll && <span className="text-[11px] tracking-tighter">✓</span>}
                       {mine && !message.deletedForAll && (
                         <button
                           type="button"
-                          className="text-[9px] tracking-tighter transition hover:scale-110"
+                          className="text-[11px] tracking-tighter transition hover:scale-110"
                           title={seenByOthers.length ? `${seenByOthers.length} kişi gördü` : "Kimse görmedi"}
                           onClick={() => setReadInfoId(message.id)}
                         >
@@ -831,11 +828,11 @@ export default function ChatPanel({
                 <span aria-hidden>📎</span>
               )}
               <span className="max-w-36 truncate">{item.file.name}</span>
-              <span className="text-[10px] text-slate-500">{humanSize(item.file.size)}</span>
+              <span className="text-[11px] text-slate-400">{humanSize(item.file.size)}</span>
               <button
                 type="button"
                 onClick={() => removeStaged(index)}
-                className="text-slate-500 transition hover:text-rose-300"
+                className="text-slate-400 transition hover:text-rose-300"
                 aria-label="Eki kaldır"
               >
                 ✕
@@ -857,7 +854,7 @@ export default function ChatPanel({
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-white/5"
               >
                 <span
-                  className="grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold text-white"
+                  className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold text-white"
                   style={{ background: member.color }}
                 >
                   {member.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
@@ -903,7 +900,7 @@ export default function ChatPanel({
             </button>
             <textarea
               ref={inputRef}
-              className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-[13.5px] text-slate-100 outline-none placeholder:text-slate-500"
+              className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-[13.5px] text-slate-100 outline-none placeholder:text-slate-400"
               value={draft}
               rows={1}
               onChange={(e) => {

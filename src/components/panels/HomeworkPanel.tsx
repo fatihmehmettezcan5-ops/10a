@@ -274,16 +274,16 @@ function HomeworkCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+            <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-slate-300">
               #{hw.id} · {hw.subject}
             </span>
             {hw.priority === "high" && (
-              <span className="rounded-md bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+              <span className="rounded-md bg-rose-500/15 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
                 ACİL
               </span>
             )}
             <span
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+              className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
                 STATUS_STYLES[hw.status as HomeworkStatus] ?? ""
               }`}
             >
@@ -370,7 +370,7 @@ function HomeworkCard({
               </span>
               {item.newDueDate && ` · yeni tarih ${item.newDueDate}`}
               {item.note && ` · “${item.note}”`}
-              <span className="ml-1 text-slate-600">
+              <span className="ml-1 text-slate-400">
                 {new Date(item.createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
               </span>
             </li>

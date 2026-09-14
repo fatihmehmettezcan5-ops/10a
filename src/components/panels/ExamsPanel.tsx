@@ -185,7 +185,7 @@ export default function ExamsPanel({
           {chartPoints.length > 1 ? (
             <NetChart points={chartPoints} />
           ) : (
-            <p className="py-8 text-center text-sm text-slate-500">
+            <p className="py-8 text-center text-sm text-slate-400">
               Grafik için en az iki deneme sonucu ekle.
             </p>
           )}
@@ -214,7 +214,7 @@ export default function ExamsPanel({
         <div className="card p-4">
           <h2 className="mb-2 text-sm font-bold text-white">Kayıtlarım ({groups.length} deneme)</h2>
           {groups.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">Henüz deneme sonucu eklemedin.</p>
+            <p className="py-6 text-center text-sm text-slate-400">Henüz deneme sonucu eklemedin.</p>
           ) : (
             <div className="space-y-2">
               {groups.map((g, gi) => {
@@ -230,19 +230,19 @@ export default function ExamsPanel({
                       >
                         <div className="min-w-0">
                           <div className="truncate text-sm font-bold text-white">{g.examName}</div>
-                          <div className="text-[10px] text-slate-500">
+                          <div className="text-[11px] text-slate-400">
                             {formatDateTR(g.date)} · {g.rows.length} ders
                           </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <span className="text-lg font-black text-indigo-300">{g.totalNet}</span>
-                          <span className="text-xs text-slate-500">{open ? "▾" : "▸"}</span>
+                          <span className="text-xs text-slate-400">{open ? "▾" : "▸"}</span>
                         </div>
                       </button>
                       <button
                         type="button"
                         onClick={() => removeGroup(g.id)}
-                        className="shrink-0 text-slate-600 transition hover:text-rose-400"
+                        className="shrink-0 text-slate-400 transition hover:text-rose-400"
                         aria-label="Denemeyi sil"
                       >
                         🗑
@@ -255,7 +255,7 @@ export default function ExamsPanel({
                             <tr key={e.id} className="border-t border-slate-800/70">
                               <td className="px-3 py-1.5 text-slate-300">
                                 <span
-                                  className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${SECTION_STYLES[SUBJECT_SECTION[e.subject] ?? ""] ?? "bg-slate-700/40 text-slate-400"}`}
+                                  className={`mr-1 rounded px-1 py-0.5 text-[11px] font-bold ${SECTION_STYLES[SUBJECT_SECTION[e.subject] ?? ""] ?? "bg-slate-700/40 text-slate-400"}`}
                                 >
                                   {SUBJECT_SECTION[e.subject] ?? "—"}
                                 </span>
@@ -402,12 +402,12 @@ export default function ExamsPanel({
         <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-center text-sm">
           <span className="text-slate-300">Net: </span>
           <span className="text-lg font-black text-indigo-200">{Number.isFinite(liveNet) ? liveNet : 0}</span>
-          <span className="ml-1 text-[10px] text-slate-500">(doğru − yanlış/4)</span>
+          <span className="ml-1 text-[11px] text-slate-400">(doğru − yanlış/4)</span>
         </div>
         <button className="btn btn-primary w-full" disabled={saving || examName.trim().length < 2}>
           {saving ? "..." : "Kaydet"}
         </button>
-        <p className="text-center text-[10px] text-slate-500">
+        <p className="text-center text-[11px] text-slate-400">
           Sonuçlar yalnızca sana görünür; sınıf başkanı gerektiğinde silebilir.
         </p>
         </form>
