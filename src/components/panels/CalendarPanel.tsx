@@ -160,7 +160,9 @@ export default function CalendarPanel({
                 key={key}
                 onClick={() => setScopeFilter(key)}
                 className={`rounded-md px-2.5 py-1 transition ${
-                  scopeFilter === key ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
+                  scopeFilter === key
+                    ? "bg-amber-500 text-black"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 {label}

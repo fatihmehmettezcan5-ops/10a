@@ -172,7 +172,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col justify-between border-r border-white/5 bg-white/[0.015] px-3 py-4 lg:flex">
         <div>
           <div className="mb-6 flex items-center gap-2.5 px-2">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-black text-white shadow-lg">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500 text-black font-black shadow-lg">
               {CLASS_NAME.replace("/", "")}
             </div>
             <div className="leading-tight">
@@ -209,7 +209,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
       <div className="min-w-0 flex-1">
         {/* Mobil üst çubuk */}
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/5 bg-[#080b12]/90 px-4 py-2.5 backdrop-blur-xl lg:hidden">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-black text-white">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-500 text-black font-black">
             {CLASS_NAME.replace("/", "")}
           </div>
           <div className="min-w-0 flex-1 leading-tight">
@@ -364,7 +364,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
 
       {toast && (
         <div className="toast fade-up">
-          <span aria-hidden className="text-indigo-300">✦</span>
+          <span aria-hidden className="text-amber-400">✦</span>
           <span className="min-w-0 flex-1">{toast}</span>
         </div>
       )}

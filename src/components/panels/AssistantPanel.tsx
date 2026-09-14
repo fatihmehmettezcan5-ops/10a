@@ -611,9 +611,9 @@ export default function AssistantPanel({
               <div className="relative rounded-lg rounded-tl-none bg-[#202c33] px-3 py-2.5 shadow-sm">
                 <span aria-hidden className="absolute left-[-7px] top-0 h-3 w-3" style={{ background: BUBBLE_IN, clipPath: "polygon(0 0, 100% 0, 0 100%)" }} />
                 <span className="inline-flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
+                  <span className="dot-typing h-1.5 w-1.5 rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                  <span className="dot-typing h-1.5 w-1.5 rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                  <span className="dot-typing h-1.5 w-1.5 rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
                 </span>
               </div>
             </div>

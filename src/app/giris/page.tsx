@@ -12,14 +12,12 @@ export default async function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center gap-10 px-5 py-10 lg:flex-row lg:items-center">
       <section className="w-full max-w-xl space-y-6 fade-up">
-        <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-200">
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-200">
           🎓 {CLASS_NAME} Sınıf Paneli
         </div>
         <h1 className="text-4xl font-black leading-tight text-white sm:text-5xl">
-          Sınıfın için gereken{" "}
-          <span className="bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-sky-400 bg-clip-text text-transparent">
-            her şey tek yerde
-          </span>
+          Sınıfın için gereken her şey,{" "}
+          <span className="text-amber-400">tek yerde</span>
         </h1>
         <p className="text-slate-300">
           Ödevleri birlikte takip edin, durumlarını güncelleyin, sınıf ve kişisel hatırlatıcılar kurun,

@@ -114,7 +114,9 @@ export default function SchedulePanel({
                 <th
                   key={day}
                   className={`rounded-lg px-2 py-2 text-xs font-bold ${
-                    index + 1 === todayIndex ? "bg-indigo-500/15 text-indigo-200" : "text-slate-300"
+                    index + 1 === todayIndex
+                      ? "bg-amber-500/15 text-amber-200"
+                      : "text-slate-300"
                   }`}
                 >
                   {day}

@@ -95,7 +95,7 @@ export default function OverviewPanel({
     { label: "Açık ödev", value: stats?.open ?? 0, tone: "from-sky-500/20 to-sky-500/5", icon: "📚" },
     { label: "Tamamlanan", value: stats?.done ?? 0, tone: "from-emerald-500/20 to-emerald-500/5", icon: "✅" },
     { label: "Gecikmiş", value: stats?.overdue ?? 0, tone: "from-rose-500/20 to-rose-500/5", icon: "⚠️" },
-    { label: "Sınıf mesajı", value: stats?.messages ?? 0, tone: "from-violet-500/20 to-violet-500/5", icon: "💬" },
+    { label: "Sınıf mesajı", value: stats?.messages ?? 0, tone: "from-amber-500/20 to-amber-500/5", icon: "💬" },
   ];
 
   return (

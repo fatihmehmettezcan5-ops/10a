@@ -36,7 +36,7 @@ export default function AuthForm() {
   return (
     <div className="card overflow-hidden p-6 shadow-2xl">
       <div className="mb-6 flex flex-col items-center text-center">
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-black text-white shadow-lg">
+        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500 text-xl font-black text-black shadow-lg">
           10A
         </div>
         <h1 className="mt-3 text-lg font-bold text-white">10/A Sınıf Paneli</h1>
@@ -53,7 +53,9 @@ export default function AuthForm() {
               setError("");
             }}
             className={`rounded-lg px-3 py-2 transition ${
-              mode === m ? "bg-indigo-500 text-white shadow" : "text-slate-400 hover:text-slate-200"
+              mode === m
+                ? "bg-amber-500 text-black shadow"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             {m === "login" ? "Giriş yap" : "Kayıt ol"}

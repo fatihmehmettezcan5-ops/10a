@@ -283,21 +283,33 @@ export default function ExamsPanel({
           <button
             type="button"
             onClick={() => setEntryMode("tyt")}
-            className={`rounded-lg px-2 py-1.5 transition ${entryMode === "tyt" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            className={`rounded-lg px-2 py-1.5 transition ${
+            entryMode === "tyt"
+              ? "bg-amber-500 text-black"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
           >
             ⚡ Hızlı TYT
           </button>
           <button
             type="button"
             onClick={() => setEntryMode("ayt")}
-            className={`rounded-lg px-2 py-1.5 transition ${entryMode === "ayt" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            className={`rounded-lg px-2 py-1.5 transition ${
+            entryMode === "ayt"
+              ? "bg-amber-500 text-black"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
           >
             ⚡ Hızlı AYT
           </button>
           <button
             type="button"
             onClick={() => setEntryMode("tek")}
-            className={`rounded-lg px-2 py-1.5 transition ${entryMode === "tek" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            className={`rounded-lg px-2 py-1.5 transition ${
+            entryMode === "tek"
+              ? "bg-amber-500 text-black"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
           >
             Tek ders
           </button>
