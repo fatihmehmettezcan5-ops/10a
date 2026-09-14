@@ -15,7 +15,7 @@ import {
   type SlotItem,
   type Stats,
 } from "@/lib/client";
-import { CLASS_NAME } from "@/lib/constants";
+import { CLASS_NAME, ROLE_LABELS } from "@/lib/constants";
 import OverviewPanel from "@/components/panels/OverviewPanel";
 import HomeworkPanel from "@/components/panels/HomeworkPanel";
 import CalendarPanel from "@/components/panels/CalendarPanel";
@@ -146,7 +146,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
 
   const userBlock = (
     <button
-      className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-left transition hover:border-indigo-500/40"
+      className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-left transition hover:border-amber-500/40"
       onClick={() => setProfileOpen(true)}
       title="Profil ayarları"
     >
@@ -158,9 +158,7 @@ export default function Dashboard({ me: initialMe }: { me: Me }) {
       </span>
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-xs font-semibold text-white">{me.name}</span>
-        <span className="block text-[11px] text-slate-400">
-          {me.role === "admin" ? "Sınıf başkanı" : "Öğrenci"}
-        </span>
+        <span className="block text-xs text-slate-300">{ROLE_LABELS[me.role] ?? "Öğrenci"}</span>
       </span>
       <span aria-hidden className="text-slate-400">⚙️</span>
     </button>

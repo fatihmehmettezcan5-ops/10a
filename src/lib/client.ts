@@ -50,6 +50,7 @@ export type HomeworkItem = {
   dueDate: string | null;
   status: string;
   priority: string;
+  recur: string | null;
   createdBy: number;
   createdByName: string;
   updatedByName: string | null;

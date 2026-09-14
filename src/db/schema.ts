@@ -35,6 +35,8 @@ export const homeworks = pgTable(
     dueDate: text("due_date"), // YYYY-MM-DD
     status: text("status").notNull().default("open"), // open | in_progress | done | postponed | cancelled
     priority: text("priority").notNull().default("normal"), // low | normal | high
+    /** Tekrarlama: null | "weekly" — teslim geçince otomatik +7 gün yenilenir. */
+    recur: text("recur"),
     createdBy: integer("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

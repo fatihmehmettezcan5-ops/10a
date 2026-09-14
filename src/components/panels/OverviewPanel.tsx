@@ -44,6 +44,20 @@ export default function OverviewPanel({
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
   const [annSaving, setAnnSaving] = useState(false);
+  const [roleBusyId, setRoleBusyId] = useState<number | null>(null);
+
+  async function setMemberRole(memberId: number, role: string) {
+    setRoleBusyId(memberId);
+    try {
+      await api(`/api/members/${memberId}`, { method: "PATCH", body: JSON.stringify({ role }) });
+      await reloadMembers();
+      notify(role === "moderator" ? "Başkan yardımcısı atandı 🎖️" : "Rol güncellendi.");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Rol güncellenemedi.");
+    } finally {
+      setRoleBusyId(null);
+    }
+  }
 
 
   async function publishAnnouncement(e: React.FormEvent) {
@@ -302,7 +316,18 @@ export default function OverviewPanel({
                   </div>
                   <div className="truncate text-[11px] text-slate-400">{m.email}</div>
                 </div>
-                
+                {me.role === "admin" && m.role !== "admin" && (
+                  <select
+                    className="input w-32 shrink-0 px-1.5 py-1 text-xs"
+                    value={m.role}
+                    disabled={roleBusyId === m.id}
+                    onChange={(e) => setMemberRole(m.id, e.target.value)}
+                    aria-label={`${m.name} rolü`}
+                  >
+                    <option value="student">Öğrenci</option>
+                    <option value="moderator">Başkan yardımcısı</option>
+                  </select>
+                )}
               </li>
             ))}
           </ul>

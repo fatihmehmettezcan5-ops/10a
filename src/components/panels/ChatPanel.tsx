@@ -311,7 +311,8 @@ export default function ChatPanel({
   /* ------------------------- MESAJ AKSİYONLARI ---------------------- */
 
   const menuMessage = menu ? messages.find((m) => m.id === menu.messageId) ?? null : null;
-  const canDeleteAll = (m: ChatItem) => (m.userId === me.id || me.role === "admin") && !m.deletedForAll;
+  const isStaff = me.role === "admin" || me.role === "moderator";
+  const canDeleteAll = (m: ChatItem) => (m.userId === me.id || isStaff) && !m.deletedForAll;
   const canEdit = (m: ChatItem) =>
     m.userId === me.id && !m.deletedForAll && Date.now() - new Date(m.createdAt).getTime() < EDIT_WINDOW_MS;
 

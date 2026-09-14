@@ -244,3 +244,10 @@ export function daysUntil(iso?: string | null): number | null {
   if (Number.isNaN(b)) return null;
   return Math.round((b - a) / 86_400_000);
 }
+
+/** Roller ve Türkçe etiketleri (admin = başkan, moderator = başkan yardımcısı). */
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "Sınıf başkanı",
+  moderator: "Başkan yardımcısı",
+  student: "Öğrenci",
+};

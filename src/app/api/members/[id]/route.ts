@@ -20,6 +20,20 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!Number.isInteger(userId)) throw new HttpError(400, "Geçersiz kullanıcı.");
 
     const body = (await request.json()) as Record<string, unknown>;
+
+    // Rol atama (yalnız admin; admin rolleri değiştirilemez)
+    if (body.role !== undefined) {
+      const role = String(body.role);
+      if (!["student", "moderator"].includes(role)) {
+        throw new HttpError(400, "Geçersiz rol.");
+      }
+      const [target] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (!target) throw new HttpError(404, "Kullanıcı bulunamadı.");
+      if (target.role === "admin") throw new HttpError(400, "Başkanın rolü değiştirilemez.");
+      const [updated] = await db.update(users).set({ role }).where(eq(users.id, userId)).returning();
+      return Response.json({ user: toSafeUser(updated) });
+    }
+
     const raw = String(body.vc ?? "").trim().toUpperCase();
     let vc: string | null;
     if (raw === "" || raw === "YOK" || raw === "NULL") {

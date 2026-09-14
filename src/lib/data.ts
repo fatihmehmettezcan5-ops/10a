@@ -17,6 +17,9 @@ import {
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { HttpError } from "@/lib/auth";
 import { kindOf, type ChatAttachment } from "@/lib/attachments";
+
+/** Başkan VE başkan yardımcısı: sınıf yönetimi yetkileri. */
+const isStaff = (role: string) => role === "admin" || role === "moderator";
 import {
   HOMEWORK_STATUSES,
   PRIORITIES,
@@ -73,6 +76,7 @@ function text(value: unknown, fallback = ""): string {
 /* --------------------------------- ÖDEVLER -------------------------------- */
 
 export async function listHomeworks(): Promise<HomeworkWithMeta[]> {
+  await rollRecurringHomeworks();
   const creator = users;
   const rows = await db
     .select({
@@ -129,6 +133,36 @@ export async function listHomeworks(): Promise<HomeworkWithMeta[]> {
   }));
 }
 
+/** Haftalık tekrarlayan ödevleri bugüne ilerletir (idempotent). */
+async function rollRecurringHomeworks() {
+  const today = todayISO();
+  const rows = await db
+    .select()
+    .from(homeworks)
+    .where(and(eq(homeworks.recur, "weekly"), lt(homeworks.dueDate, today)));
+  for (const hw of rows) {
+    if (hw.status === "cancelled") continue;
+    let due = hw.dueDate ?? today;
+    while (due < today) {
+      const d = new Date(`${due}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + 7);
+      due = d.toISOString().slice(0, 10);
+    }
+    await db
+      .update(homeworks)
+      .set({ dueDate: due, status: "open" })
+      .where(eq(homeworks.id, hw.id));
+    await db.insert(homeworkUpdates).values({
+      homeworkId: hw.id,
+      userId: null,
+      fromStatus: hw.status,
+      toStatus: "open",
+      note: "🔁 Haftalık tekrar: otomatik yenilendi.",
+      newDueDate: due,
+    });
+  }
+}
+
 export async function createHomework(userId: number, input: Record<string, unknown>) {
   const title = text(input.title);
   if (title.length < 2) throw new HttpError(400, "Ödev başlığı en az 2 karakter olmalı.");
@@ -145,6 +179,7 @@ export async function createHomework(userId: number, input: Record<string, unkno
       dueDate: normalizeDate(input.dueDate),
       priority,
       status: "open",
+      recur: input.recur === "weekly" ? "weekly" : null,
       createdBy: userId,
       updatedBy: userId,
     })
@@ -222,7 +257,7 @@ export async function deleteHomework(homeworkId: number, user: { id: number; rol
   const rows = await db.select().from(homeworks).where(eq(homeworks.id, homeworkId)).limit(1);
   const hw = rows[0];
   if (!hw) throw new HttpError(404, "Ödev bulunamadı.");
-  if (hw.createdBy !== user.id && user.role !== "admin") {
+  if (hw.createdBy !== user.id && !isStaff(user.role)) {
     throw new HttpError(403, "Bu ödevi sadece ekleyen kişi veya sınıf başkanı silebilir.");
   }
   await db.delete(homeworks).where(eq(homeworks.id, homeworkId));
@@ -292,7 +327,7 @@ export async function toggleEvent(eventId: number, userId: number, role: string,
   const rows = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
   const ev = rows[0];
   if (!ev) throw new HttpError(404, "Hatırlatıcı bulunamadı.");
-  if (ev.scope === "personal" && ev.ownerId !== userId && role !== "admin") {
+  if (ev.scope === "personal" && ev.ownerId !== userId && !isStaff(role)) {
     throw new HttpError(403, "Bu hatırlatıcıyı değiştiremezsin.");
   }
   const [updated] = await db.update(events).set({ done }).where(eq(events.id, eventId)).returning();
@@ -303,7 +338,7 @@ export async function deleteEvent(eventId: number, userId: number, role: string)
   const rows = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
   const ev = rows[0];
   if (!ev) throw new HttpError(404, "Hatırlatıcı bulunamadı.");
-  if (ev.ownerId !== userId && role !== "admin") {
+  if (ev.ownerId !== userId && !isStaff(role)) {
     throw new HttpError(403, "Bu hatırlatıcıyı sadece ekleyen kişi silebilir.");
   }
   await db.delete(events).where(eq(events.id, eventId));
@@ -517,7 +552,8 @@ export async function deleteMessageForAll(user: { id: number; role: string }, me
   const [row] = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
   if (!row) throw new HttpError(404, "Mesaj bulunamadı.");
   const own = row.userId === user.id;
-  if (!own && user.role !== "admin") throw new HttpError(403, "Yalnızca kendi mesajını silebilirsin.");
+  if (!own && !isStaff(user.role))
+    throw new HttpError(403, "Yalnızca kendi mesajını silersin; başkalarının mesajını yöneticiler silebilir.");
   await db.update(messages).set({ deletedForAll: true }).where(eq(messages.id, messageId));
   return true;
 }
@@ -888,7 +924,7 @@ export async function deleteMockExamGroup(id: string, userId: number, role: stri
   const examName = text(id.slice(sep + 1));
   if (!date || examName.length < 2) throw new HttpError(400, "Geçersiz deneme kimliği.");
   const filters = [eq(mockExams.date, date), eq(mockExams.examName, examName)];
-  if (role !== "admin") filters.push(eq(mockExams.userId, userId));
+  if (!isStaff(role)) filters.push(eq(mockExams.userId, userId));
   const deleted = await db
     .delete(mockExams)
     .where(and(...filters))
@@ -901,7 +937,7 @@ export async function deleteMockExam(id: number, userId: number, role: string) {
   const rows = await db.select().from(mockExams).where(eq(mockExams.id, id)).limit(1);
   const row = rows[0];
   if (!row) throw new HttpError(404, "Deneme kaydı bulunamadı.");
-  if (row.userId !== userId && role !== "admin") {
+  if (row.userId !== userId && !isStaff(role)) {
     throw new HttpError(403, "Bu kaydı sadece sahibi silebilir.");
   }
   await db.delete(mockExams).where(eq(mockExams.id, id));
@@ -946,7 +982,7 @@ export async function deleteAnnouncement(id: number, userId: number, role: strin
   const rows = await db.select().from(announcements).where(eq(announcements.id, id)).limit(1);
   const row = rows[0];
   if (!row) throw new HttpError(404, "Duyuru bulunamadı.");
-  if (row.authorId !== userId && role !== "admin") {
+  if (row.authorId !== userId && !isStaff(role)) {
     throw new HttpError(403, "Bu duyuruyu sadece yayınlayan veya sınıf başkanı silebilir.");
   }
   await db.delete(announcements).where(eq(announcements.id, id));

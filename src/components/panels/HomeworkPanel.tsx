@@ -34,6 +34,7 @@ export default function HomeworkPanel({
   const [subject, setSubject] = useState("Matematik");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<Priority>("normal");
+  const [recur, setRecur] = useState(false);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -60,11 +61,12 @@ export default function HomeworkPanel({
     try {
       await api("/api/homeworks", {
         method: "POST",
-        body: JSON.stringify({ title, subject, dueDate: dueDate || null, priority, description }),
+        body: JSON.stringify({ title, subject, dueDate: dueDate || null, priority, description, recur: recur ? "weekly" : null }),
       });
       setTitle("");
       setDescription("");
       setDueDate("");
+      setRecur(false);
       setShowForm(false);
       await reload();
       notify("Ödev eklendi ✅");
@@ -277,7 +279,12 @@ function HomeworkCard({
             <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-slate-300">
               #{hw.id} · {hw.subject}
             </span>
-            {hw.priority === "high" && (
+            {hw.recur === "weekly" && (
+                <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-300" title="Haftalık tekrar eden ödev">
+                  🔁 haftalık
+                </span>
+              )}
+              {hw.priority === "high" && (
               <span className="rounded-md bg-rose-500/15 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
                 ACİL
               </span>

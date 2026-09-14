@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
-    if (user.role !== "admin") {
+    if (user.role !== "admin" && user.role !== "moderator") {
       throw new HttpError(403, "Duyuru yayınlama yetkisi sadece sınıf başkanında.");
     }
     const body = (await request.json()) as Record<string, unknown>;
